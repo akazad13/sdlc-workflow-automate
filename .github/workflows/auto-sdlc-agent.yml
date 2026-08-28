@@ -1,0 +1,22 @@
+name: Autonomous SDLC Agent Pipeline
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  autonomous-sdlc:
+    if: contains(github.event.issue.labels.*.name, 'sdlc-agent') || github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Run SDLC Autonomous Orchestrator Engine
+      run: |
+        dotnet run --project src/NanoLink.Orchestrator
