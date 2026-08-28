@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using NanoLink.Api.Middleware;
 using NanoLink.Api.Models;
 using NanoLink.Api.Services;
@@ -9,8 +10,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddOpenApi();
 
-// Register Storage and Domain Services
-builder.Services.AddSingleton<IUrlRepository, InMemoryUrlRepository>();
+// Configure Storage Provider (InMemory vs Sqlite)
+string storageProvider = builder.Configuration.GetValue<string>("Storage:Provider") ?? "Sqlite";
+string connectionString = builder.Configuration.GetValue<string>("Storage:ConnectionString") ?? "Data Source=nanolink.db";
+
+if (storageProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddDbContextFactory<NanoLinkDbContext>(options =>
+        options.UseSqlite(connectionString));
+    builder.Services.AddSingleton<IUrlRepository, SqliteUrlRepository>();
+}
+else
+{
+    builder.Services.AddSingleton<IUrlRepository, InMemoryUrlRepository>();
+}
+
+// Register Domain & Rate Limiting Services
 builder.Services.AddSingleton<ITokenBucketRateLimiter>(_ => new TokenBucketRateLimiter(capacity: 10, refillTokensPerMinute: 10));
 builder.Services.AddScoped<IUrlShortenerService, UrlShortenerService>();
 
@@ -18,6 +33,14 @@ builder.Services.AddScoped<IUrlShortenerService, UrlShortenerService>();
 builder.Services.AddHostedService<UrlCleanupBackgroundService>();
 
 var app = builder.Build();
+
+// Ensure SQLite Database is initialized if using Sqlite
+if (storageProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    var factory = app.Services.GetRequiredService<IDbContextFactory<NanoLinkDbContext>>();
+    using var db = factory.CreateDbContext();
+    db.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -32,7 +55,8 @@ app.MapGet("/health", () => Results.Ok(new
 {
     status = "Healthy",
     service = "NanoLink.Api",
-    version = "1.0.0",
+    version = "1.2.0",
+    storageProvider,
     timestamp = DateTime.UtcNow
 }))
 .WithName("HealthCheck")
