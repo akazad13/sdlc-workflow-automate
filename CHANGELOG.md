@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [1.12.0] - feat(tags): Add custom tagging and categorization for shortened URLs
+- Automated implementation and validation via SDLC autonomous skills.
+- 100% automated test suite pass rate.
+- Passed Roslyn & Security quality gate.
+
+
 ## [1.8.0] - feat(analytics): Add Referrer and Device breakdown endpoint
 - Automated implementation and validation via SDLC autonomous skills.
 - 100% automated test suite pass rate.
