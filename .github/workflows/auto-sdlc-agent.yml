@@ -25,19 +25,25 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
 
-    - name: Run SDLC Autonomous Orchestrator Engine
+    - name: Run Antigravity Autonomous SDLC Skill Runner
       env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         ISSUE_NUMBER: ${{ github.event.issue.number }}
         ISSUE_TITLE: ${{ github.event.issue.title }}
         ISSUE_BODY: ${{ github.event.issue.body }}
         GITHUB_EVENT_PATH: ${{ env.GITHUB_EVENT_PATH }}
       run: |
-        dotnet run --project src/NanoLink.Orchestrator -- --issue ${{ github.event.issue.number }}
+        python .agents/runner/sdlc_agent_runner.py --issue ${{ github.event.issue.number }}
 
     - name: Commit & Push Code and Artifacts to Branch
       id: git_push
@@ -55,7 +61,7 @@ jobs:
         if git diff-index --quiet HEAD --; then
           echo "No changes to commit."
         else
-          git commit -m "feat(issue-${ISSUE_NUM}): autonomous C# implementation and test verification"
+          git commit -m "feat(issue-${ISSUE_NUM}): autonomous skill-driven implementation and verification"
           git push -f origin ${BRANCH_NAME}
         fi
 
@@ -75,7 +81,7 @@ jobs:
           let specContent = fs.existsSync(specFile) ? fs.readFileSync(specFile, 'utf8') : '';
           let reviewContent = fs.existsSync(reviewFile) ? fs.readFileSync(reviewFile, 'utf8') : '';
           
-          const prBody = `## 🤖 Autonomous SDLC Pipeline Pull Request\n\nCloses #${issueNumber}\n\n` +
+          const prBody = `## 🤖 Autonomous SDLC Skill-Driven Pull Request\n\nCloses #${issueNumber}\n\n` +
             `### 📋 Formalized Specification\n${specContent}\n\n` +
             `### 🛡️ Quality Gate & Test Review\n${reviewContent}`;
 
@@ -95,7 +101,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
-              body: `### 🚀 Autonomous SDLC Pipeline Completed!\n\n` +
+              body: `### 🚀 Autonomous SDLC Skill Runner Completed!\n\n` +
                     `✅ **All xUnit tests passed**\n` +
                     `✅ **Roslyn Quality & Security Gate passed (100%)**\n\n` +
                     `👉 **Pull Request Created:** #${pr.data.number} (${pr.data.html_url})`

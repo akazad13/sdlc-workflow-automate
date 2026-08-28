@@ -1,5 +1,11 @@
 # Changelog
 
+
+## [1.7.0] - feat: QR Code Generator
+- Automated implementation and validation via SDLC autonomous skills.
+- 100% automated test suite pass rate.
+- Passed Roslyn & Security quality gate.
+
 ## [1.6.0] - 2026-08-28
 ### Closes Issue #6: feat(qrcode): Add dynamic SVG and PNG QR Code generation endpoint for shortened URLs
 - Automated implementation and validation via SDLC autonomous pipeline.
