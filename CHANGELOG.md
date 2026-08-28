@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [1.9.0] - feat(analytics): Add Referrer and Device/Browser click analytics breakdown endpoint
+- Automated implementation and validation via SDLC autonomous skills.
+- 100% automated test suite pass rate.
+- Passed Roslyn & Security quality gate.
+
+
 ## [1.7.0] - feat: QR Code Generator
 - Automated implementation and validation via SDLC autonomous skills.
 - 100% automated test suite pass rate.
