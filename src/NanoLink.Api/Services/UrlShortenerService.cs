@@ -8,13 +8,15 @@ namespace NanoLink.Api.Services;
 public partial class UrlShortenerService : IUrlShortenerService
 {
     private readonly IUrlRepository _repository;
+    private readonly IPasswordProtectionService _passwordService;
     private const string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private const int DefaultCodeLength = 6;
     private const int MaxCollisionRetries = 5;
 
-    public UrlShortenerService(IUrlRepository repository)
+    public UrlShortenerService(IUrlRepository repository, IPasswordProtectionService passwordService)
     {
         _repository = repository;
+        _passwordService = passwordService;
     }
 
     public async Task<(bool Success, string? Error, UrlResponse? Result)> ShortenUrlAsync(
@@ -43,6 +45,11 @@ public partial class UrlShortenerService : IUrlShortenerService
             return (false, "TTL must be greater than 0 seconds.", null);
         }
 
+        if (request.MaxVisits.HasValue && request.MaxVisits.Value <= 0)
+        {
+            return (false, "Max visits limit must be greater than 0.", null);
+        }
+
         string shortCode;
         if (!string.IsNullOrWhiteSpace(request.CustomAlias))
         {
@@ -69,12 +76,24 @@ public partial class UrlShortenerService : IUrlShortenerService
             ? DateTime.UtcNow.AddSeconds(request.TtlSeconds.Value)
             : null;
 
+        string? hash = null;
+        string? salt = null;
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            var (h, s) = _passwordService.HashPassword(request.Password);
+            hash = h;
+            salt = s;
+        }
+
         var record = new UrlRecord
         {
             ShortCode = shortCode,
             TargetUrl = parsedUri.ToString(),
             CreatedAtUtc = DateTime.UtcNow,
             ExpiresAtUtc = expiresAt,
+            PasswordHash = hash,
+            PasswordSalt = salt,
+            MaxVisits = request.MaxVisits,
             VisitCount = 0
         };
 
@@ -90,7 +109,9 @@ public partial class UrlShortenerService : IUrlShortenerService
             ShortUrl: $"{formattedBaseUrl}/{record.ShortCode}",
             TargetUrl: record.TargetUrl,
             CreatedAtUtc: record.CreatedAtUtc,
-            ExpiresAtUtc: record.ExpiresAtUtc
+            ExpiresAtUtc: record.ExpiresAtUtc,
+            IsPasswordProtected: record.IsPasswordProtected,
+            MaxVisits: record.MaxVisits
         );
 
         return (true, null, response);
@@ -113,7 +134,10 @@ public partial class UrlShortenerService : IUrlShortenerService
             CreatedAtUtc: record.CreatedAtUtc,
             ExpiresAtUtc: record.ExpiresAtUtc,
             LastAccessedUtc: record.LastAccessedUtc,
-            IsExpired: record.IsExpired
+            IsExpired: record.IsExpired,
+            IsPasswordProtected: record.IsPasswordProtected,
+            MaxVisits: record.MaxVisits,
+            IsExhausted: record.IsExhausted
         );
     }
 
@@ -125,6 +149,34 @@ public partial class UrlShortenerService : IUrlShortenerService
     public async Task<bool> DeleteUrlAsync(string shortCode, CancellationToken ct = default)
     {
         return await _repository.DeleteAsync(shortCode, ct);
+    }
+
+    public async Task<(bool Success, string? Error, string? TargetUrl)> VerifyAndUnlockAsync(string shortCode, string password, CancellationToken ct = default)
+    {
+        var record = await _repository.GetStatsAsync(shortCode, ct);
+        if (record == null || record.IsExpired)
+        {
+            return (false, "Short URL not found or expired.", null);
+        }
+
+        if (record.IsExhausted)
+        {
+            return (false, "Short URL has reached its maximum visit limit.", null);
+        }
+
+        if (!record.IsPasswordProtected)
+        {
+            return (true, null, record.TargetUrl);
+        }
+
+        if (!_passwordService.VerifyPassword(password, record.PasswordHash!, record.PasswordSalt!))
+        {
+            return (false, "Invalid password provided.", null);
+        }
+
+        // Increment visit count upon successful unlock
+        await _repository.GetAsync(shortCode, recordVisit: true, ct);
+        return (true, null, record.TargetUrl);
     }
 
     private async Task<string> GenerateUniqueCodeAsync(CancellationToken ct)

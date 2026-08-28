@@ -8,12 +8,14 @@ namespace NanoLink.Tests;
 public class ExpirationTests
 {
     private readonly IUrlRepository _repository;
+    private readonly IPasswordProtectionService _passwordService;
     private readonly UrlShortenerService _service;
 
     public ExpirationTests()
     {
         _repository = new InMemoryUrlRepository();
-        _service = new UrlShortenerService(_repository);
+        _passwordService = new PasswordProtectionService();
+        _service = new UrlShortenerService(_repository, _passwordService);
     }
 
     [Fact]

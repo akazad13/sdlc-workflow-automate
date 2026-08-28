@@ -9,4 +9,5 @@ public interface IUrlShortenerService
     Task<UrlStatsResponse?> GetStatsAsync(string shortCode, CancellationToken ct = default);
     Task<GlobalStatsResponse> GetGlobalStatsAsync(CancellationToken ct = default);
     Task<bool> DeleteUrlAsync(string shortCode, CancellationToken ct = default);
+    Task<(bool Success, string? Error, string? TargetUrl)> VerifyAndUnlockAsync(string shortCode, string password, CancellationToken ct = default);
 }

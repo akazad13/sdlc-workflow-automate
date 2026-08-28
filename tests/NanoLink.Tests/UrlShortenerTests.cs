@@ -8,13 +8,15 @@ namespace NanoLink.Tests;
 public class UrlShortenerTests
 {
     private readonly IUrlRepository _repository;
+    private readonly IPasswordProtectionService _passwordService;
     private readonly UrlShortenerService _service;
     private const string BaseUrl = "https://nano.link";
 
     public UrlShortenerTests()
     {
         _repository = new InMemoryUrlRepository();
-        _service = new UrlShortenerService(_repository);
+        _passwordService = new PasswordProtectionService();
+        _service = new UrlShortenerService(_repository, _passwordService);
     }
 
     [Fact]
@@ -142,6 +144,56 @@ public class UrlShortenerTests
         var expectedMinExpiry = DateTime.UtcNow.AddSeconds(ttlSeconds - 2);
         var expectedMaxExpiry = DateTime.UtcNow.AddSeconds(ttlSeconds + 2);
         Assert.InRange(result.ExpiresAtUtc.Value, expectedMinExpiry, expectedMaxExpiry);
+    }
+
+    [Fact]
+    public async Task ShortenUrl_WithPassword_EnablesPasswordProtection()
+    {
+        // Arrange
+        var request = new CreateUrlRequest("https://example.com/secret", Password: "SuperSecretPassword123");
+
+        // Act
+        var (success, _, result) = await _service.ShortenUrlAsync(request, BaseUrl);
+        var stats = await _service.GetStatsAsync(result!.ShortCode);
+
+        // Assert
+        Assert.True(success);
+        Assert.NotNull(result);
+        Assert.True(result.IsPasswordProtected);
+        Assert.NotNull(stats);
+        Assert.True(stats.IsPasswordProtected);
+    }
+
+    [Fact]
+    public async Task VerifyAndUnlock_ValidPassword_ReturnsTargetUrl()
+    {
+        // Arrange
+        var request = new CreateUrlRequest("https://example.com/secret", Password: "MyPassword456");
+        var (_, _, result) = await _service.ShortenUrlAsync(request, BaseUrl);
+
+        // Act
+        var (success, error, targetUrl) = await _service.VerifyAndUnlockAsync(result!.ShortCode, "MyPassword456");
+
+        // Assert
+        Assert.True(success);
+        Assert.Null(error);
+        Assert.Equal("https://example.com/secret", targetUrl);
+    }
+
+    [Fact]
+    public async Task VerifyAndUnlock_InvalidPassword_ReturnsError()
+    {
+        // Arrange
+        var request = new CreateUrlRequest("https://example.com/secret", Password: "MyPassword456");
+        var (_, _, result) = await _service.ShortenUrlAsync(request, BaseUrl);
+
+        // Act
+        var (success, error, targetUrl) = await _service.VerifyAndUnlockAsync(result!.ShortCode, "WrongPassword");
+
+        // Assert
+        Assert.False(success);
+        Assert.Equal("Invalid password provided.", error);
+        Assert.Null(targetUrl);
     }
 
     [Fact]

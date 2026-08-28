@@ -3,7 +3,9 @@ namespace NanoLink.Api.Models;
 public record CreateUrlRequest(
     string TargetUrl,
     string? CustomAlias = null,
-    int? TtlSeconds = null
+    int? TtlSeconds = null,
+    string? Password = null,
+    int? MaxVisits = null
 );
 
 public record UrlResponse(
@@ -11,7 +13,9 @@ public record UrlResponse(
     string ShortUrl,
     string TargetUrl,
     DateTime CreatedAtUtc,
-    DateTime? ExpiresAtUtc
+    DateTime? ExpiresAtUtc,
+    bool IsPasswordProtected = false,
+    int? MaxVisits = null
 );
 
 public record UrlStatsResponse(
@@ -21,7 +25,10 @@ public record UrlStatsResponse(
     DateTime CreatedAtUtc,
     DateTime? ExpiresAtUtc,
     DateTime? LastAccessedUtc,
-    bool IsExpired
+    bool IsExpired,
+    bool IsPasswordProtected = false,
+    int? MaxVisits = null,
+    bool IsExhausted = false
 );
 
 public record GlobalStatsResponse(
@@ -29,6 +36,10 @@ public record GlobalStatsResponse(
     int ActiveUrls,
     int ExpiredUrls,
     long TotalVisits
+);
+
+public record UnlockUrlRequest(
+    string Password
 );
 
 public class UrlRecord
@@ -40,5 +51,11 @@ public class UrlRecord
     public DateTime? LastAccessedUtc { get; set; }
     public int VisitCount { get; set; }
 
+    public string? PasswordHash { get; set; }
+    public string? PasswordSalt { get; set; }
+    public int? MaxVisits { get; set; }
+
+    public bool IsPasswordProtected => !string.IsNullOrEmpty(PasswordHash);
     public bool IsExpired => ExpiresAtUtc.HasValue && DateTime.UtcNow > ExpiresAtUtc.Value;
+    public bool IsExhausted => MaxVisits.HasValue && VisitCount >= MaxVisits.Value;
 }

@@ -12,6 +12,13 @@ TestResults/
 [Tt]est[Rr]esults/
 **/TestResults/
 
+## SQLite Local Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
 ## Visual Studio & User State
 *.suo
 *.user
