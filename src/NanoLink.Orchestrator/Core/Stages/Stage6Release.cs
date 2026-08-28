@@ -13,26 +13,24 @@ public class Stage6Release : ISdlcStage
         AnsiConsole.MarkupLine("[bold cyan]▶ Finalizing Release v{0}...[/]", context.ReleasedVersion);
 
         string changelogPath = Path.Combine(context.BaseDirectory, "CHANGELOG.md");
-        string changelogEntry = $$"""
-            # Changelog
+        string existingContent = File.Exists(changelogPath) ? await File.ReadAllTextAsync(changelogPath, ct) : "# Changelog\n\n";
 
+        string newEntry = $$"""
             ## [{{context.ReleasedVersion}}] - {{DateTime.UtcNow:yyyy-MM-dd}}
-
-            ### Added
-            - **TTL URL Expiration**: Added support for Time-To-Live expiration with automatic background cleanup worker (`UrlCleanupBackgroundService`).
-            - **Token-Bucket Rate Limiting**: Implemented `RateLimitingMiddleware` with 10 req/min per IP capacity and `X-RateLimit-*` response headers.
-            - **Real-Time Analytics**: Added `/api/v1/stats` for cluster metrics and `/api/v1/urls/{shortCode}` for individual URL tracking.
-
-            ### Security & Stability
-            - Thread-safe in-memory concurrency using atomic operations and `ConcurrentDictionary`.
-            - Strict URI scheme and length validation to prevent SSRF and injection vulnerabilities.
-            - Comprehensive xUnit test suite with 100% pass rate.
+            ### Closes Issue #{{context.IssueNumber}}: {{context.IssueTitle}}
+            - Automated implementation and validation via SDLC autonomous pipeline.
+            - 100% xUnit test suite pass rate ({{context.PassedTests}} tests passing).
+            - Quality and security gates verified with a score of {{context.QualityScore:F1}}%.
 
             """;
 
-        await File.WriteAllTextAsync(changelogPath, changelogEntry, ct);
+        string updatedContent = existingContent.Contains("## [") 
+            ? existingContent.Replace("# Changelog\n\n", $"# Changelog\n\n{newEntry}\n")
+            : $"# Changelog\n\n{newEntry}";
 
-        AnsiConsole.MarkupLine("[green]✔ Release notes and CHANGELOG.md generated successfully![/]");
+        await File.WriteAllTextAsync(changelogPath, updatedContent, ct);
+
+        AnsiConsole.MarkupLine("[green]✔ Release notes and CHANGELOG.md updated for Issue #{0}![/]", context.IssueNumber);
         return true;
     }
 }

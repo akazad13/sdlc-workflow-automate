@@ -18,7 +18,7 @@ public static class DotnetTestRunner
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = "test --verbosity normal --no-build",
+            Arguments = "test --verbosity normal",
             WorkingDirectory = solutionDir,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -44,13 +44,13 @@ public static class DotnetTestRunner
             int passed = 0;
             int failed = 0;
 
-            var totalMatch = Regex.Match(stdout, @"Total tests:\s*(\d+)");
+            var totalMatch = Regex.Match(stdout, @"Total(?:\s+tests)?:\s*(\d+)", RegexOptions.IgnoreCase);
             if (totalMatch.Success) int.TryParse(totalMatch.Groups[1].Value, out total);
 
-            var passedMatch = Regex.Match(stdout, @"Passed:\s*(\d+)");
+            var passedMatch = Regex.Match(stdout, @"Passed:\s*(\d+)", RegexOptions.IgnoreCase);
             if (passedMatch.Success) int.TryParse(passedMatch.Groups[1].Value, out passed);
 
-            var failedMatch = Regex.Match(stdout, @"Failed:\s*(\d+)");
+            var failedMatch = Regex.Match(stdout, @"Failed:\s*(\d+)", RegexOptions.IgnoreCase);
             if (failedMatch.Success) int.TryParse(failedMatch.Groups[1].Value, out failed);
 
             // If regex didn't find summary, count passed lines

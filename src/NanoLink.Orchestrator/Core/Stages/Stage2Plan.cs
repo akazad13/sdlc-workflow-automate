@@ -10,25 +10,20 @@ public class Stage2Plan : ISdlcStage
 
     public async Task<bool> ExecuteAsync(SdlcContext context, CancellationToken ct = default)
     {
-        AnsiConsole.MarkupLine("[bold cyan]▶ Formulating Architecture & C# Design Plan...[/]");
+        AnsiConsole.MarkupLine("[bold cyan]▶ Formulating Architecture & C# Design Plan for Issue #{0}...[/]", context.IssueNumber);
 
-        string planContent = $"""
-            # Implementation Plan: Issue #{context.IssueNumber}
+        string planContent = $$"""
+            # Implementation Plan: Issue #{{context.IssueNumber}} — {{context.IssueTitle}}
 
-            ## 1. Component Architecture
-            - **`NanoLink.Api/Models/UrlModels.cs`**:
-              - Updated `CreateUrlRequest`, `UrlResponse`, `UrlStatsResponse`, `GlobalStatsResponse`, `UrlRecord`.
-            - **`NanoLink.Api/Storage/IUrlRepository.cs`**:
-              - Thread-safe repository contract with `CleanupExpiredAsync`, `GetGlobalStatsAsync`, `DeleteAsync`.
-            - **`NanoLink.Api/Services/TokenBucketRateLimiter.cs`**:
-              - Thread-safe token bucket algorithm tracking tokens and refill timestamps per client IP.
-            - **`NanoLink.Api/Middleware/RateLimitingMiddleware.cs`**:
-              - ASP.NET Core middleware injecting headers and enforcing 429 status code on quota exhaustion.
-            - **`NanoLink.Api/Services/UrlCleanupBackgroundService.cs`**:
-              - `BackgroundService` executing periodic eviction loop.
+            ## 1. Component Architecture & Target Scopes
+            - **Scope & Focus**: `{{context.IssueTitle}}`
+            - **Target Projects**:
+              - `src/NanoLink.Api`: ASP.NET Core Minimal APIs, Domain Models, Service Contracts, and Storage.
+              - `src/NanoLink.Orchestrator`: CLI automation runner and quality gate evaluators.
+              - `tests/NanoLink.Tests`: Comprehensive xUnit unit & integration testing matrices.
 
             ## 2. Test Verification Matrix
-            | Test Class | Scope | Scenario |
+            | Test Suite | Scope | Target Invariants |
             | :--- | :--- | :--- |
             | `UrlShortenerTests` | Unit | Base62 generation, custom alias validation, collision retry, TTL calculation |
             | `RateLimiterTests` | Unit | Token acquisition, exhaustion, per-IP isolation, bucket reset |
@@ -37,7 +32,7 @@ public class Stage2Plan : ISdlcStage
 
             ## 3. Git Branching Strategy
             - Target Branch: `main`
-            - Working Branch: `{context.BranchName}`
+            - Working Branch: `{{context.BranchName}}`
             """;
 
         string planPath = Path.Combine(context.ArtifactsDirectory, $"plan_issue_{context.IssueNumber}.md");
