@@ -1,8 +1,18 @@
-## .NET / Visual Studio
-bin/
-obj/
+## .NET Build Outputs & Artifacts
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+**/bin/
+**/obj/
+**/bin/**
+**/obj/**
 *.binlog
 TestResults/
+[Tt]est[Rr]esults/
+**/TestResults/
+
+## Visual Studio & User State
 *.suo
 *.user
 *.userosscache
