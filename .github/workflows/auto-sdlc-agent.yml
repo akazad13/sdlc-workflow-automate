@@ -9,9 +9,17 @@ permissions:
   issues: write
   pull-requests: write
 
+# Prevent duplicate / concurrent runs on the same issue
+concurrency:
+  group: sdlc-issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   autonomous-sdlc:
-    if: contains(github.event.issue.labels.*.name, 'sdlc-agent') || github.event.action == 'opened'
+    # Trigger ONLY when 'sdlc-agent' label is explicitly added, or on issue opened with 'sdlc-agent' label
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'sdlc-agent') ||
+      (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'sdlc-agent'))
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -44,7 +52,7 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
         git checkout -B ${BRANCH_NAME}
-        git add src/ tests/ artifacts/ CHANGELOG.md .agents/ .github/ *.csproj *.sln* appsettings*.json .gitignore
+        git add -A
 
         if git diff-index --quiet HEAD --; then
           echo "No changes to commit."
