@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0] - 2026-08-28
+### Closes Issue #2: feat(security): Add Password-Protected URLs and Max Click Limit with auto-expiration
+- Automated implementation and validation via SDLC autonomous pipeline.
+- 100% xUnit test suite pass rate (28 tests passing).
+- Quality and security gates verified with a score of 100.0%.
+
 ## [1.1.0] - 2026-08-28
 ### Closes Issue #1: feat(storage): Implement SQLite / EF Core 10 persistent repository with configurable storage provider
 - Automated implementation and validation via SDLC autonomous pipeline.
