@@ -2,24 +2,22 @@ name: Autonomous SDLC Agent Pipeline
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
-# Prevent duplicate / concurrent runs on the same issue
+# Queue jobs per issue without canceling in-progress runs
 concurrency:
   group: sdlc-issue-${{ github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   autonomous-sdlc:
-    # Trigger ONLY when 'sdlc-agent' label is explicitly added, or on issue opened with 'sdlc-agent' label
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'sdlc-agent') ||
-      (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'sdlc-agent'))
+    # Trigger ONLY when the 'sdlc-agent' label specifically is added
+    if: github.event.label.name == 'sdlc-agent'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
