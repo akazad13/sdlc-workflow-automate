@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NanoLink.Api.Models;
+using NanoLink.Api.Services;
 using Xunit;
 
 namespace NanoLink.Tests;
@@ -119,6 +120,31 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         var subs = await listResp.Content.ReadFromJsonAsync<List<WebhookSubscription>>();
         Assert.NotNull(subs);
         Assert.Contains(subs, s => s.TargetUrl == targetUrl);
+    }
+
+    [Fact]
+    public async Task ClickAnalyticsEndpoint_RecordsAndReturnsBreakdown()
+    {
+        var client = CreateTestClient();
+        string alias = $"stat-{Guid.NewGuid():N}"[..10];
+        var createRequest = new CreateUrlRequest("https://example.com/analytics-target", CustomAlias: alias);
+        await client.PostAsJsonAsync("/api/v1/urls", createRequest);
+
+        // Simulate click with referrer and user-agent
+        var clickMsg = new HttpRequestMessage(HttpMethod.Get, $"/{alias}");
+        clickMsg.Headers.Referrer = new Uri("https://github.com/dotnet");
+        clickMsg.Headers.UserAgent.ParseAdd("Mozilla/5.0 Chrome/120.0");
+        await client.SendAsync(clickMsg);
+
+        // Fetch Analytics Breakdown
+        var analyticsResp = await client.GetAsync($"/api/v1/urls/{alias}/analytics");
+        Assert.Equal(HttpStatusCode.OK, analyticsResp.StatusCode);
+
+        var report = await analyticsResp.Content.ReadFromJsonAsync<UrlAnalyticsResponse>();
+        Assert.NotNull(report);
+        Assert.Equal(1, report.TotalClicks);
+        Assert.True(report.TopReferrers.ContainsKey("github.com"));
+        Assert.True(report.BrowserBreakdown.ContainsKey("Chrome"));
     }
 
     [Fact]

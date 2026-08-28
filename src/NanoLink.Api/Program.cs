@@ -25,11 +25,12 @@ else
     builder.Services.AddSingleton<IUrlRepository, InMemoryUrlRepository>();
 }
 
-// Register Domain, Security, and Feature Services
+// Register Domain, Security, Analytics, and Feature Services
 builder.Services.AddSingleton<ITokenBucketRateLimiter>(_ => new TokenBucketRateLimiter(capacity: 10, refillTokensPerMinute: 10));
 builder.Services.AddSingleton<IPasswordProtectionService, PasswordProtectionService>();
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 builder.Services.AddSingleton<IWebhookDispatcher, WebhookDispatcherService>();
+builder.Services.AddSingleton<IClickAnalyticsService, ClickAnalyticsService>();
 builder.Services.AddScoped<IUrlShortenerService, UrlShortenerService>();
 
 // Register Background Services
@@ -58,7 +59,7 @@ app.MapGet("/health", () => Results.Ok(new
 {
     status = "Healthy",
     service = "NanoLink.Api",
-    version = "1.5.0",
+    version = "1.6.0",
     storageProvider,
     timestamp = DateTime.UtcNow
 }))
@@ -112,6 +113,25 @@ app.MapGet("/api/v1/urls/{shortCode}", async (
 })
 .WithName("GetUrlStats")
 .WithTags("Urls");
+
+// Get Click Analytics Breakdown
+app.MapGet("/api/v1/urls/{shortCode}/analytics", async (
+    string shortCode,
+    [FromServices] IUrlShortenerService shortenerService,
+    [FromServices] IClickAnalyticsService analyticsService,
+    CancellationToken ct) =>
+{
+    var stats = await shortenerService.GetStatsAsync(shortCode, ct);
+    if (stats == null || stats.IsExpired)
+    {
+        return Results.NotFound(new { error = $"Short URL code '{shortCode}' not found or expired." });
+    }
+
+    var report = analyticsService.GetAnalytics(shortCode);
+    return Results.Ok(report);
+})
+.WithName("GetUrlAnalytics")
+.WithTags("Analytics");
 
 // Delete Short URL
 app.MapDelete("/api/v1/urls/{shortCode}", async (
@@ -215,6 +235,8 @@ app.MapGet("/{shortCode}", async (
     string shortCode,
     [FromServices] IUrlShortenerService shortenerService,
     [FromServices] IWebhookDispatcher webhookDispatcher,
+    [FromServices] IClickAnalyticsService analyticsService,
+    HttpContext httpContext,
     CancellationToken ct) =>
 {
     var stats = await shortenerService.GetStatsAsync(shortCode, ct);
@@ -238,6 +260,9 @@ app.MapGet("/{shortCode}", async (
     {
         return Results.NotFound(new { error = $"Short URL code '{shortCode}' not found." });
     }
+
+    // Capture referrer and user-agent analytics
+    analyticsService.RecordClick(record.ShortCode, httpContext.Request.Headers.Referer, httpContext.Request.Headers.UserAgent);
 
     await webhookDispatcher.PublishEventAsync("url.visited", record.ShortCode, record.TargetUrl, ct);
 
