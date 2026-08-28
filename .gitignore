@@ -1,0 +1,44 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.binlog
+TestResults/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.DotSettings.user
+
+## Coverlet / Code Coverage
+coverage/
+coverage-report/
+*.cobertura.xml
+*.coverage
+*.coveragexml
+
+## JetBrains Rider / ReSharper
+.idea/
+_ReSharper*/
+
+## OS Specific
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log
+
+## Python (scratch/utility)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+## Local Environment & User Secrets
+appsettings.Local.json
+appsettings.*.Local.json
+*.secrets.json
+.env
