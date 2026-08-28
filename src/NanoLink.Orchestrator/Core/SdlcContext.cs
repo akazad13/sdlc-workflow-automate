@@ -3,20 +3,26 @@ using System.Text.RegularExpressions;
 
 namespace NanoLink.Orchestrator.Core;
 
+public record DiscoveredProject(
+    string Name,
+    string ProjectPath,
+    string RelativePath,
+    bool IsTestProject
+);
+
 public class SdlcContext
 {
-    public int IssueNumber { get; set; } = 101;
-    public string IssueTitle { get; set; } = "Implement TTL URL Expiration, Rate Limiting Middleware, and Real-Time Analytics";
-    public string IssueDescription { get; set; } = """
-        Feature Request:
-        1. Add TTL-based URL expiration with background cleanup worker.
-        2. Implement Token-Bucket Rate Limiting (10 req/min per IP) with 429 Retry-After headers.
-        3. Provide real-time analytics /api/v1/stats reporting active vs expired URLs and total visits.
-        """;
+    public int IssueNumber { get; set; } = 1;
+    public string IssueTitle { get; set; } = "Autonomous Feature Implementation";
+    public string IssueDescription { get; set; } = "Generic SDLC requirement";
 
-    public string BranchName { get; set; } = "feat/issue-101-ttl-ratelimit-stats";
+    public string SolutionName { get; set; } = "Solution";
+    public string SolutionFilePath { get; set; } = string.Empty;
+    public string BranchName { get; set; } = "feat/autonomous-impl";
     public string BaseDirectory { get; set; } = Directory.GetCurrentDirectory();
     public string ArtifactsDirectory { get; set; } = Path.Combine(Directory.GetCurrentDirectory(), "artifacts");
+
+    public List<DiscoveredProject> DiscoveredProjects { get; set; } = [];
 
     public bool TriagePassed { get; set; }
     public bool PlanningPassed { get; set; }
@@ -33,20 +39,16 @@ public class SdlcContext
 
     public static SdlcContext InitializeFromEnvironment(string[] args)
     {
-        var context = new SdlcContext
-        {
-            BaseDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."))
-        };
+        var context = new SdlcContext();
 
-        if (!File.Exists(Path.Combine(context.BaseDirectory, "NanoLink.slnx")) &&
-            !File.Exists(Path.Combine(context.BaseDirectory, "NanoLink.sln")))
-        {
-            context.BaseDirectory = Directory.GetCurrentDirectory();
-        }
-
+        // 1. Resolve Solution Root by scanning for .sln, .slnx, or .git
+        context.BaseDirectory = FindSolutionRoot(AppContext.BaseDirectory) ?? Directory.GetCurrentDirectory();
         context.ArtifactsDirectory = Path.Combine(context.BaseDirectory, "artifacts");
 
-        // 1. Check if running inside GitHub Actions with GITHUB_EVENT_PATH
+        // 2. Discover Solution Name and Projects
+        DiscoverProjects(context);
+
+        // 3. Check if running inside GitHub Actions with GITHUB_EVENT_PATH
         string? eventPath = Environment.GetEnvironmentVariable("GITHUB_EVENT_PATH");
         if (!string.IsNullOrWhiteSpace(eventPath) && File.Exists(eventPath))
         {
@@ -58,19 +60,13 @@ public class SdlcContext
                 if (doc.RootElement.TryGetProperty("issue", out var issueProp))
                 {
                     if (issueProp.TryGetProperty("number", out var numProp))
-                    {
                         context.IssueNumber = numProp.GetInt32();
-                    }
 
                     if (issueProp.TryGetProperty("title", out var titleProp))
-                    {
                         context.IssueTitle = titleProp.GetString() ?? context.IssueTitle;
-                    }
 
                     if (issueProp.TryGetProperty("body", out var bodyProp))
-                    {
                         context.IssueDescription = bodyProp.GetString() ?? context.IssueDescription;
-                    }
                 }
             }
             catch (Exception ex)
@@ -79,7 +75,7 @@ public class SdlcContext
             }
         }
 
-        // 2. Check Environment Variables (ISSUE_NUMBER, ISSUE_TITLE, ISSUE_BODY)
+        // 4. Check Environment Variables (ISSUE_NUMBER, ISSUE_TITLE, ISSUE_BODY)
         string? envNum = Environment.GetEnvironmentVariable("ISSUE_NUMBER");
         if (int.TryParse(envNum, out int parsedNum)) context.IssueNumber = parsedNum;
 
@@ -89,29 +85,65 @@ public class SdlcContext
         string? envBody = Environment.GetEnvironmentVariable("ISSUE_BODY");
         if (!string.IsNullOrWhiteSpace(envBody)) context.IssueDescription = envBody;
 
-        // 3. Check CLI Arguments
+        // 5. Check CLI Arguments
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--issue" && i + 1 < args.Length && int.TryParse(args[i + 1], out int cliNum))
-            {
                 context.IssueNumber = cliNum;
-            }
             else if (args[i] == "--title" && i + 1 < args.Length)
-            {
                 context.IssueTitle = args[i + 1];
-            }
             else if (args[i] == "--desc" && i + 1 < args.Length)
-            {
                 context.IssueDescription = args[i + 1];
-            }
+            else if (args[i] == "--dir" && i + 1 < args.Length)
+                context.BaseDirectory = Path.GetFullPath(args[i + 1]);
         }
 
-        // Generate dynamic branch name & version based on issue number and title
+        // Generate dynamic branch name & version based on issue
         string slug = Slugify(context.IssueTitle);
         context.BranchName = $"feat/issue-{context.IssueNumber}-{slug}";
-        context.ReleasedVersion = $"1.{context.IssueNumber % 100}.0";
+        context.ReleasedVersion = $"1.{Math.Max(1, context.IssueNumber % 100)}.0";
 
         return context;
+    }
+
+    private static void DiscoverProjects(SdlcContext context)
+    {
+        var slnFiles = Directory.GetFiles(context.BaseDirectory, "*.sln*", SearchOption.TopDirectoryOnly);
+        if (slnFiles.Length > 0)
+        {
+            context.SolutionFilePath = slnFiles[0];
+            context.SolutionName = Path.GetFileNameWithoutExtension(slnFiles[0]);
+        }
+        else
+        {
+            context.SolutionName = new DirectoryInfo(context.BaseDirectory).Name;
+        }
+
+        var csprojFiles = Directory.GetFiles(context.BaseDirectory, "*.csproj", SearchOption.AllDirectories)
+            .Where(f => !f.Contains("obj") && !f.Contains("bin"));
+
+        foreach (var proj in csprojFiles)
+        {
+            string name = Path.GetFileNameWithoutExtension(proj);
+            string rel = Path.GetRelativePath(context.BaseDirectory, proj);
+            bool isTest = name.Contains("Test", StringComparison.OrdinalIgnoreCase) || rel.Contains("test", StringComparison.OrdinalIgnoreCase);
+
+            context.DiscoveredProjects.Add(new DiscoveredProject(name, proj, rel, isTest));
+        }
+    }
+
+    private static string? FindSolutionRoot(string startDir)
+    {
+        var current = new DirectoryInfo(startDir);
+        while (current != null)
+        {
+            if (current.GetFiles("*.sln*").Length > 0 || current.GetDirectories(".git").Length > 0)
+            {
+                return current.FullName;
+            }
+            current = current.Parent;
+        }
+        return null;
     }
 
     private static string Slugify(string text)

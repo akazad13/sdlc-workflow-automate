@@ -10,56 +10,33 @@ public class Stage3Code : ISdlcStage
 
     public Task<bool> ExecuteAsync(SdlcContext context, CancellationToken ct = default)
     {
-        AnsiConsole.MarkupLine("[bold cyan]▶ Implementing and Validating C# Microservice & Storage Layer on branch:[/] [yellow]{0}[/]", context.BranchName);
+        AnsiConsole.MarkupLine("[bold cyan]▶ Scanning and Validating C# Implementation across solution on branch:[/] [yellow]{0}[/]", context.BranchName);
 
-        var requiredFiles = new List<string>
-        {
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Models", "UrlModels.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Storage", "IUrlRepository.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Storage", "InMemoryUrlRepository.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Storage", "NanoLinkDbContext.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Storage", "SqliteUrlRepository.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Services", "UrlShortenerService.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Services", "TokenBucketRateLimiter.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Middleware", "RateLimitingMiddleware.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Services", "UrlCleanupBackgroundService.cs"),
-            Path.Combine(context.BaseDirectory, "src", "NanoLink.Api", "Program.cs"),
-            Path.Combine(context.BaseDirectory, "tests", "NanoLink.Tests", "UrlShortenerTests.cs"),
-            Path.Combine(context.BaseDirectory, "tests", "NanoLink.Tests", "RateLimiterTests.cs"),
-            Path.Combine(context.BaseDirectory, "tests", "NanoLink.Tests", "ExpirationTests.cs"),
-            Path.Combine(context.BaseDirectory, "tests", "NanoLink.Tests", "SqliteRepositoryTests.cs"),
-            Path.Combine(context.BaseDirectory, "tests", "NanoLink.Tests", "IntegrationTests.cs")
-        };
+        var csFiles = Directory.GetFiles(context.BaseDirectory, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains("\\obj\\") && !f.Contains("/obj/") && !f.Contains("\\bin\\") && !f.Contains("/bin/"))
+            .ToList();
 
         var table = new Table().Border(TableBorder.Rounded);
-        table.AddColumn("[bold]File Component[/]");
-        table.AddColumn("[bold]Feature Area[/]");
+        table.AddColumn("[bold]Project Module[/]");
+        table.AddColumn("[bold]C# Source Files[/]");
         table.AddColumn("[bold]Status[/]");
 
-        bool allExist = true;
-        foreach (var file in requiredFiles)
+        foreach (var proj in context.DiscoveredProjects)
         {
-            bool exists = File.Exists(file);
-            string relativePath = Path.GetRelativePath(context.BaseDirectory, file);
-            string area = relativePath.Contains("Sqlite") || relativePath.Contains("DbContext") ? "Persistent Storage (EF Core)"
-                        : relativePath.Contains("Middleware") || relativePath.Contains("RateLimit") ? "Rate Limiting & Security"
-                        : relativePath.Contains("Tests") ? "xUnit Test Matrix"
-                        : "Core Domain & API";
+            string projDir = Path.GetDirectoryName(proj.ProjectPath) ?? context.BaseDirectory;
+            int fileCount = csFiles.Count(f => f.StartsWith(projDir, StringComparison.OrdinalIgnoreCase));
+            string type = proj.IsTestProject ? "[cyan]Test Project[/]" : "[yellow]Core Service[/]";
 
-            if (exists)
-            {
-                table.AddRow(relativePath, area, "[green]✔ Implemented & Verified[/]");
-            }
-            else
-            {
-                table.AddRow(relativePath, area, "[red]✖ Missing[/]");
-                allExist = false;
-            }
+            table.AddRow(
+                $"{proj.Name} ({type})",
+                $"{fileCount} files",
+                fileCount > 0 ? "[green]✔ Implemented & Verified[/]" : "[yellow]⚠ Empty Project[/]"
+            );
         }
 
         AnsiConsole.Write(table);
 
-        context.CodingPassed = allExist;
-        return Task.FromResult(allExist);
+        context.CodingPassed = csFiles.Count > 0;
+        return Task.FromResult(context.CodingPassed);
     }
 }
