@@ -40,14 +40,14 @@ extracted-sdlc-toolkit/
 ## ⚡ 3-Minute Quickstart for Any Project
 
 ### Step 1: Copy Toolkit Files into Your Repository
-Copy the contents of `extracted-sdlc-toolkit/` directly into the root of your target project:
+Copy the contents directly into the root of your target project:
 
 ```bash
 # In your target project repository:
-cp -r /path/to/extracted-sdlc-toolkit/.agents .
-cp -r /path/to/extracted-sdlc-toolkit/.github .
-cp -r /path/to/extracted-sdlc-toolkit/.specify .
-cp -r /path/to/extracted-sdlc-toolkit/scripts .
+cp -r /path_to_this_repo/.agents .
+cp -r /path_to_this_repo/.github .
+cp -r /path_to_this_repo/.specify .
+cp -r /path_to_this_repo/scripts .
 ```
 
 ### Step 2: Configure GitHub Repository Secret
