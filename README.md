@@ -7,7 +7,7 @@ A production-tested, fully autonomous **Spec-Driven Development (SDD) AI Workflo
 ## 📦 What's in This Toolkit?
 
 ```text
-extracted-sdlc-toolkit/
+sdlc-workflow-automate/
 ├── .agents/
 │   └── skills/
 │       ├── sdd-intake/SKILL.md         # Stage 1: PRD Ingestion & Architectural Interview
