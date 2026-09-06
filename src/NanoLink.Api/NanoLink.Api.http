@@ -1,6 +1,0 @@
-@NanoLink.Api_HostAddress = http://localhost:5133
-
-GET {{NanoLink.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

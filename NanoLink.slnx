@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/NanoLink.Api/NanoLink.Api.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/NanoLink.Tests/NanoLink.Tests.csproj" />
-  </Folder>
-</Solution>

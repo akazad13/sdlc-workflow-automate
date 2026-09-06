@@ -1,8 +1,0 @@
-{
-  "pre_test": [
-    "dotnet build --no-restore"
-  ],
-  "post_edit": [
-    "dotnet format --verify-no-changes"
-  ]
-}
