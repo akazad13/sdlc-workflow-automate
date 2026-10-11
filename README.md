@@ -1,5 +1,10 @@
 # 🚀 Autonomous Spec-Driven SDLC Toolkit
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Spec-Driven Development](https://img.shields.io/badge/Methodology-SDD-blueviolet.svg)](#)
+[![AI Powered](https://img.shields.io/badge/AI-Multi--Agent%20SDD-orange.svg)](#)
+[![CI Gate](https://img.shields.io/badge/CI-Strict%20Merge%20Gate-success.svg)](#)
+
 A production-tested, fully autonomous **Spec-Driven Development (SDD) AI Workflow** that transforms Product Requirements Documents (PRDs) into production code, comprehensive automated test suites (Unit, Integration, E2E), and verified GitHub Pull Requests with autonomous AI code reviews.
 
 ---
