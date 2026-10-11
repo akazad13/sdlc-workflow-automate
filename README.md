@@ -212,3 +212,8 @@ The toolkit automatically detects your runtime in `scripts/sdd_engine.py` and su
 
 Edit `.specify/memory/constitution.md` to encode your language-specific rules and layer boundaries.
 
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
