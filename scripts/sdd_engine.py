@@ -55,10 +55,11 @@ CODE_EXTENSIONS = {
 }
 LOCKFILE_NAMES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "Cargo.lock",
                   "go.sum", "packages.lock.json", "composer.lock", "Gemfile.lock"}
-SECRET_FILE_PATTERNS = [r"(^|/)\.env(\.|$)", r"\.pem$", r"\.pfx$", r"\.p12$", r"\.key$",
+SECRET_FILE_PATTERNS = [r"(^|/)\.env(?!\.(example|sample|template|dist)$)(\.|$)", r"\.pem$", r"\.pfx$", r"\.p12$", r"\.key$",
                         r"(^|/)id_(rsa|ed25519|ecdsa)$", r"\.secrets?\.json$", r"(^|/)credentials\.json$"]
-FOCUSED_TEST_PATTERNS = [r"\b(it|describe|test)\.only\s*\(", r"\bfit\s*\(", r"\bfdescribe\s*\("]
-SKIPPED_TEST_PATTERNS = [r"\b(it|describe|test)\.skip\s*\(", r"\bxit\s*\(", r"\bxdescribe\s*\(",
+# Jasmine/Jest globals only: `model.fit(` or `self.fit(` is a method call, not a focused test.
+FOCUSED_TEST_PATTERNS = [r"\b(it|describe|test)\.only\s*\(", r"(?<![\w.$])fit\s*\(", r"(?<![\w.$])fdescribe\s*\("]
+SKIPPED_TEST_PATTERNS = [r"\b(it|describe|test)\.skip\s*\(", r"(?<![\w.$])xit\s*\(", r"(?<![\w.$])xdescribe\s*\(",
                          r"@pytest\.mark\.skip\b", r"@unittest\.skip\b", r"\bSkip\s*=\s*\"",
                          r"\[Ignore\b", r"\bt\.Skip\(", r"#\[ignore\]", r"@Disabled\b"]
 
@@ -297,31 +298,28 @@ def parse_tasks(text: str, key: str) -> List[Task]:
 
 
 def find_cycle(graph: Dict[str, List[str]]) -> Optional[List[str]]:
+    """Return one cycle as [a, b, ..., a], or None. Iterative DFS, so long dependency chains are safe."""
     WHITE, GREY, BLACK = 0, 1, 2
     color = {n: WHITE for n in graph}
-    stack: List[str] = []
-
-    def visit(node: str) -> Optional[List[str]]:
-        color[node] = GREY
-        stack.append(node)
-        for nxt in graph.get(node, []):
-            if nxt not in color:
+    done = object()
+    for root in graph:
+        if color[root] != WHITE:
+            continue
+        color[root] = GREY
+        path, pending = [root], [iter(graph.get(root) or [])]
+        while pending:
+            nxt = next(pending[-1], done)
+            if nxt is done:
+                color[path.pop()] = BLACK
+                pending.pop()
+            elif nxt not in color:
                 continue
-            if color[nxt] == GREY:
-                return stack[stack.index(nxt):] + [nxt]
-            if color[nxt] == WHITE:
-                found = visit(nxt)
-                if found:
-                    return found
-        stack.pop()
-        color[node] = BLACK
-        return None
-
-    for n in list(graph):
-        if color[n] == WHITE:
-            found = visit(n)
-            if found:
-                return found
+            elif color[nxt] == GREY:
+                return path[path.index(nxt):] + [nxt]
+            elif color[nxt] == WHITE:
+                color[nxt] = GREY
+                path.append(nxt)
+                pending.append(iter(graph.get(nxt) or []))
     return None
 
 
@@ -544,7 +542,9 @@ def validate_module(ws: Workspace, slug: str, stage: str, roadmap: Optional[List
 def test_hygiene(ws: Workspace, slug: str, key: str, corpus: Dict[str, str]) -> List[Issue]:
     """Flag focused tests (hide other failures) and skipped tests in files this module touches."""
     issues = []
-    relevant = {f for f, text in corpus.items() if re.search(rf"\b{re.escape(key)}-(?:AC|E2E)-\d+", text)}
+    # Same ID forms as coverage: KEY-AC-01 in comments/strings, KEY_AC_01 in identifiers.
+    id_re = re.compile(rf"(?<![A-Za-z0-9]){re.escape(key)}[-_](?:AC|E2E)[-_]\d+")
+    relevant = {f for f, text in corpus.items() if id_re.search(text)}
     if is_git_repo(ws):
         changed = set(changed_files_vs_base(ws, ws.config["base_branch"]))
         relevant |= {f for f in corpus if f in changed}
@@ -656,15 +656,19 @@ def parse_test_counts(output: str) -> Dict[str, Optional[int]]:
     """Best-effort counts from common runners. The exit code, not these numbers, decides pass/fail."""
     counts: Dict[str, Optional[int]] = {"passed": None, "failed": None, "skipped": None}
     patterns = {
-        # dotnet: "Passed!  - Failed:     0, Passed:    12, Skipped:     0" / "total: 12, failed: 0, succeeded: 12, skipped: 0"
-        "dotnet": {"passed": r"Passed:\s+(\d+)|succeeded:\s*(\d+)", "failed": r"Failed:\s+(\d+)|failed:\s*(\d+)",
-                   "skipped": r"Skipped:\s+(\d+)|skipped:\s*(\d+)"},
+        # dotnet summary (one line for the whole run): "total: 12, failed: 0, succeeded: 12, skipped: 0"
+        "dotnet-summary": {"passed": r"total:\s*\d+, failed:\s*\d+, succeeded:\s*(\d+)",
+                           "failed": r"total:\s*\d+, failed:\s*(\d+)",
+                           "skipped": r"succeeded:\s*\d+, skipped:\s*(\d+)"},
+        # dotnet classic (one line per test project, summed): "Passed!  - Failed:     0, Passed:    12, Skipped:     0"
+        "dotnet": {"passed": r"Passed:\s+(\d+)", "failed": r"Failed:\s+(\d+)", "skipped": r"Skipped:\s+(\d+)"},
         # jest: "Tests:       1 failed, 2 skipped, 10 passed, 13 total"
         "jest": {"passed": r"Tests:.*?(\d+) passed", "failed": r"Tests:.*?(\d+) failed", "skipped": r"Tests:.*?(\d+) skipped"},
         # vitest: "Tests  10 passed | 1 failed (11)"
         "vitest": {"passed": r"Tests\s+.*?(\d+) passed", "failed": r"Tests\s+.*?(\d+) failed", "skipped": r"Tests\s+.*?(\d+) skipped"},
-        # pytest: "=== 10 passed, 1 failed, 2 skipped in 0.12s ==="
-        "pytest": {"passed": r"=+ .*?(\d+) passed", "failed": r"=+ .*?(\d+) failed", "skipped": r"=+ .*?(\d+) skipped"},
+        # pytest: "=== 10 passed, 1 failed, 2 skipped in 0.12s ===" (-q drops the "=" rule)
+        "pytest": {k: rf"(?m)^=*\s*(?:\d+ [a-z]+, )*(\d+) {word}\b.* in [\d.]+s"
+                   for k, word in (("passed", "passed"), ("failed", "failed"), ("skipped", "skipped"))},
         # cargo: "test result: ok. 10 passed; 0 failed; 1 ignored" (one line per test binary, summed)
         "cargo": {"passed": r"test result: .*?(\d+) passed", "failed": r"test result: .*?(\d+) failed",
                   "skipped": r"test result: .*?(\d+) ignored"},
@@ -675,14 +679,15 @@ def parse_test_counts(output: str) -> Dict[str, Optional[int]]:
             matches = re.findall(p, output)
             nums = [int(next(g for g in m if g)) if isinstance(m, tuple) else int(m) for m in matches]
             if nums:
-                found[k] = sum(nums) if runner == "cargo" else nums[-1]
+                found[k] = sum(nums) if runner in ("cargo", "dotnet") else nums[-1]
         if "passed" in found or "failed" in found:
             counts.update(found)
             return counts
     ran = re.findall(r"^Ran (\d+) tests? in", output, re.M)  # python unittest
     if ran:
         total = int(ran[-1])
-        num = lambda name: sum(int(n) for n in re.findall(rf"\b{name}=(\d+)", output))  # noqa: E731
+        # "expected failures=N" are passing outcomes, not failures.
+        num = lambda name: sum(int(n) for n in re.findall(rf"(?<!expected )\b{name}=(\d+)", output))  # noqa: E731
         failed, skipped = num("failures") + num("errors"), num("skipped")
         counts.update({"passed": total - failed - skipped, "failed": failed, "skipped": skipped})
         return counts

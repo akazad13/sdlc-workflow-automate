@@ -132,7 +132,8 @@ def annotate_patch(patch: str) -> Tuple[Set[int], List[str]]:
     right: Set[int] = set()
     hunks: List[List[str]] = []
     new_line: Optional[int] = None
-    for raw in patch.split("\n"):
+    # A trailing newline would otherwise become a phantom context line past the end of the file.
+    for raw in patch.rstrip("\n").split("\n"):
         m = HUNK_RE.match(raw)
         if m:
             new_line = int(m.group(1))
@@ -169,26 +170,29 @@ def risk_score(path: str) -> int:
 
 
 def build_batches(files: List[FileDiff], max_chars: int) -> List[List[Tuple[FileDiff, str]]]:
-    """Pack (file, chunk) pairs into batches under max_chars; split oversized files by hunk."""
+    """Pack (file, chunk) pairs into batches of at most max_chars; split oversized files by hunk."""
+    cont = "(hunk continued)\n"
+    room = max(max_chars - len(cont) - 1, 1)  # longest line that still fits after `cont`
     units: List[Tuple[FileDiff, str]] = []
     for f in files:
         pieces: List[str] = []
         for hunk in f.annotated_hunks:
-            if len(hunk) <= max_chars:
+            if len(hunk) < max_chars:  # +1 for the newline that joins pieces into a chunk
                 pieces.append(hunk)
                 continue
             # Split an oversized hunk on line boundaries; every line keeps its line-number prefix.
-            lines, part = hunk.split("\n"), ""
-            for line in lines:
+            part = ""
+            for line in hunk.split("\n"):
+                line = line[:room]
                 if part and len(part) + len(line) + 1 > max_chars:
                     pieces.append(part.rstrip("\n"))
-                    part = "(hunk continued)\n"
-                part += line[:max_chars] + "\n"
+                    part = cont
+                part += line + "\n"
             if part:
                 pieces.append(part.rstrip("\n"))
         chunk = ""
         for hunk in pieces:
-            if chunk and len(chunk) + len(hunk) > max_chars:
+            if chunk and len(chunk) + len(hunk) + 1 > max_chars:
                 units.append((f, chunk))
                 chunk = ""
             chunk += hunk + "\n"
@@ -342,7 +346,8 @@ def validate_findings(raw: List[dict], batch: List[Tuple[FileDiff, str]], strict
     for item in raw:
         if not isinstance(item, dict):
             continue
-        path = str(item.get("file", "")).strip().lstrip("./")
+        # Remove a "./" or "/" prefix only; lstrip("./") would also eat the dot of ".github/...".
+        path = re.sub(r"^(?:\./|/)+", "", str(item.get("file", "")).strip())
         if path not in by_path:
             log("warning", f"Dropped finding on file outside this batch: {path!r} ({item.get('title')})")
             continue
