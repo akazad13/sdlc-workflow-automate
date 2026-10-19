@@ -1,50 +1,62 @@
-# Technical Implementation Plan: [MODULE/FEATURE NAME] (`[module-slug]`)
+# Technical Implementation Plan: [MODULE TITLE] (`[module-slug]`)
+
+> **Module Key:** `[KEY]` | **Spec:** `.specify/specs/[module-slug]/spec.md`
 
 ## 1. Architectural Alignment
-- **Architecture Pattern**: Clean Architecture / Hexagonal Architecture
+- **Pattern**: TODO(sdd): pattern from `system-architecture.md` (do not introduce a new one without a constitution amendment)
 - **Layer Mapping**:
-  - `Domain`: Pure entities, value objects, domain events, domain exceptions. Zero external dependencies.
-  - `Application`: Command/Query handlers, use case interactors, DTO contracts, validator implementations.
-  - `Infrastructure`: Database DbContext/ORM entities, repositories, external API clients, message brokers.
-  - `Api / Presentation`: Minimal API / Controllers, route definitions, auth filters, middleware.
+  - `Domain`: entities, value objects, domain events, domain exceptions. No framework dependencies.
+  - `Application`: command/query handlers, use cases, validators, ports.
+  - `Infrastructure`: persistence, external clients, message publishers.
+  - `Api / Presentation`: routes, auth filters, middleware, DTOs.
 
 ---
 
-## 2. Directory Layout & Proposed Code Tree
+## 2. Existing Code Analysis (required for brownfield repos)
+- **Conventions to follow**: TODO(sdd): naming, folder layout, error handling, DI registration, test style observed in `project-context.md`
+- **Reused components**: TODO(sdd): existing services, base classes, helpers (with paths)
+- **Files to modify**: TODO(sdd): paths and why
+
+---
+
+## 3. Directory Layout & Proposed Code Tree
 ```text
+TODO(sdd): match the repo's existing layout. Example:
 src/[module-slug]/
-  ├── Domain/
-  │   ├── Entities/
-  │   ├── Events/
-  │   └── Exceptions/
-  ├── Application/
-  │   ├── Commands/
-  │   ├── Queries/
-  │   └── Interfaces/
-  ├── Infrastructure/
-  │   ├── Persistence/
-  │   └── Clients/
-  └── Api/
-      ├── Endpoints/
-      └── Middleware/
-tests/[module-slug].Tests/
-  ├── Unit/
-  ├── Integration/
-  └── E2E/
+  Domain/
+  Application/
+  Infrastructure/
+  Api/
+tests/[module-slug]/
+  Unit/
+  Integration/
+  E2E/
 ```
 
 ---
 
-## 3. Technology & Dependencies
-- **Runtime**: [e.g. Node.js 22 / Python 3.12 / .NET 10 / Go 1.23]
-- **ORM / Persistence**: [e.g. Prisma / EF Core / SQLAlchemy / pgx]
-- **Validation**: [e.g. Zod / FluentValidation / Pydantic]
-- **Test Runners**: [e.g. Vitest / xUnit / Pytest / Go test]
+## 4. Technology & Dependencies
+- **New third-party packages**: TODO(sdd): name, version, licence, reason, or `None`
+- **Runtime / ORM / Validation / Test runners**: as defined in `system-architecture.md`
 
 ---
 
-## 4. Quality & Verification Gates
-1. Linter / Build verification with strict error checking (`--warnaserror` / `tsc --noEmit`).
-2. Automated Unit Tests verifying all validation edge cases.
-3. Automated Integration Tests verifying persistence and database transactions.
-4. Automated E2E Tests executing lifecycle scenarios without manual dependencies.
+## 5. Delivery Slices
+Large modules ship as a stack of small PRs (target: under `max_pr_changed_lines` from `.specify/config.json`).
+
+| Slice | Scope | Tasks | Est. changed lines |
+| :--- | :--- | :--- | :--- |
+| 1 | Contracts, domain, unit tests | [KEY]-T001..[KEY]-T00N | TODO(sdd) |
+
+---
+
+## 6. Data Migration & Rollout
+- **Migration strategy**: TODO(sdd): expand/contract, backfill, or `None`
+- **Feature flag**: TODO(sdd): flag name, or `None`
+- **Rollback**: TODO(sdd)
+
+---
+
+## 7. Verification Commands
+- **Targeted tests for this module**: TODO(sdd): e.g. `pytest tests/[module-slug]` (also set `module_commands` in `.specify/config.json`)
+- **Full gate**: `python scripts/sdd_engine.py verify --module [module-slug]`

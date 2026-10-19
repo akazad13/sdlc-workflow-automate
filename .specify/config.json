@@ -1,0 +1,15 @@
+{
+  "base_branch": "main",
+  "branch_prefix": "feature/",
+  "commands": {
+    "lint": null,
+    "build": null,
+    "test": null
+  },
+  "module_commands": {},
+  "test_path_markers": ["test", "tests", "spec", "specs", "e2e", "__tests__"],
+  "ignore_dirs": [".git", ".specify", "node_modules", "bin", "obj", "dist", "build", "target", ".venv", "venv", "vendor", "coverage", "TestResults"],
+  "max_pr_changed_lines": 600,
+  "max_review_iterations": 3,
+  "command_timeout_seconds": 1800
+}
