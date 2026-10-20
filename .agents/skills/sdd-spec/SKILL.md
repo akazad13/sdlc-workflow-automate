@@ -1,12 +1,14 @@
 ---
 name: "sdd-spec"
-description: "Generate an individual module specification with verifiable unit test criteria, integration contracts, and automated E2E test scenarios."
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+description: "Generate a traceable module specification (REQ -> AC -> E2E -> task IDs), a convention-aware technical plan with delivery slices, and a dependency-ordered task list, then validate it."
+compatibility: "Requires spec-kit project structure with .specify/ directory and Python 3.10+"
 ---
 
-# SDD Spec: Individual Module Specification with Automated Test & E2E Criteria
+# SDD Spec: Traceable Module Specification
 
-You are the Lead Specification Engineer in a Spec-Driven Development (SDD) AI workflow. Your role is to take a decomposed module or feature (e.g., `auth-service`, `catalog-service`, `billing-service`) and generate a formal, executable specification suite conforming to GitHub Spec Kit conventions, complete with automated unit, integration, and E2E test criteria.
+You are the Lead Specification Engineer. A spec is accurate when every owned requirement becomes at
+least one observable acceptance criterion, every criterion has a planned task and a planned test,
+and nothing in it is guessed.
 
 ## User Input
 
@@ -14,107 +16,82 @@ You are the Lead Specification Engineer in a Spec-Driven Development (SDD) AI wo
 $ARGUMENTS
 ```
 
-The user input specifies the module slug or feature name (e.g., `auth-service`). If omitted, inspect `.specify/architecture/module-decomposition.md` to identify the next pending module in the roadmap sequence.
+The module slug (e.g. `auth-service`). If omitted, run `python scripts/sdd_engine.py status` and
+pick the first module whose dependencies are `Done` and whose status is `Planned`.
 
 ---
 
-## Workflow Steps
+## Step 1: Load Context
 
-```mermaid
-flowchart TD
-    Module[Module Slug: $ARGUMENTS] --> LoadContext[1. Load Architecture & Decomposition]
-    LoadContext --> GenSpec[2. Generate spec.md with E2E Criteria]
-    GenSpec --> GenPlan[3. Generate Technical plan.md]
-    GenPlan --> GenTasks[4. Generate Actionable tasks.md]
-    GenTasks --> Checklist[5. Run Checklist Validation & User Gate]
+1. `.specify/memory/constitution.md` and `.specify/memory/project-context.md`.
+2. `.specify/architecture/system-architecture.md`, the module's row in `module-decomposition.md`, and
+   the rows of `requirements.md` it owns.
+3. For each module in `Depends On`: its `spec.md` section 4.1 (Contracts Provided). Consume those
+   contracts exactly; do not redefine them.
+4. Brownfield: search the codebase for code this module will touch or reuse (entities, routes,
+   tables, shared services). Read those files, not the whole repo.
+
+## Step 2: Scaffold
+
+```bash
+python scripts/sdd_engine.py spec --module <slug>
 ```
 
----
+Creates `spec.md`, `plan.md`, `tasks.md`, `checklist.md` under `.specify/specs/<slug>/` with the
+module key from the roadmap. Existing files are kept unless `--force` is passed.
 
-## Step 1: Context Ingestion
+## Step 3: Write `spec.md`
 
-1. Read `.specify/memory/constitution.md` for project rules and standards.
-2. Read `.specify/architecture/system-architecture.md` and `.specify/architecture/module-decomposition.md`.
-3. Locate the target module requirements, inputs/outputs, dependencies, and responsibilities.
+Replace every `TODO(sdd)`. Rules:
 
----
+- **IDs**: `<KEY>-AC-NN` for acceptance criteria, `<KEY>-E2E-NN` for E2E scenarios. Never renumber;
+  only append. Each AC line ends with `Traces: REQ-NNN[, ...]`.
+- **Coverage**: every owned `REQ-NNN` appears in at least one AC. Cover the happy path, validation
+  failures, authorization failures, not-found, conflicts/concurrency, and idempotent retries where
+  the requirement implies them.
+- **Observable outcomes**: "Then" states a status code, response field, persisted state, or emitted
+  event. Reject vague outcomes such as "works correctly" or "handles errors".
+- **Contracts**: section 4.1 lists everything this module provides (with the ACs each endpoint
+  satisfies); 4.2 lists consumed contracts with provider module and failure behaviour.
+- **Section 6** maps tests to criteria: unit, integration, and E2E items name the AC/E2E IDs they verify.
+- **Section 8 (brownfield impact)**: files expected to change, shared contracts affected, and the
+  backward-compatibility plan.
+- **Unknowns**: write `[NEEDS CLARIFICATION: question]`. Do not resolve it by guessing; ask the user.
 
-## Step 2: Generate `specs/<module-slug>/spec.md`
+## Step 4: Write `plan.md`
 
-Create `.specify/specs/<module-slug>/spec.md` structured as follows:
+- Follow the patterns in `project-context.md`. A new pattern or package requires a constitution
+  amendment or a recorded reason.
+- List reused components and files to modify with paths.
+- **Delivery slices**: split the module into PR-sized slices under `max_pr_changed_lines` from
+  `.specify/config.json` (default 600). Each slice is independently buildable and tested.
+- Migration, feature-flag, and rollback strategy for anything touching persisted data or public contracts.
+- The targeted test command for this module; add it to `module_commands` in `.specify/config.json`.
 
-```markdown
-# Specification: [Module Name] (`<module-slug>`)
+## Step 5: Write `tasks.md`
 
-## 1. Executive Summary & Objectives
-- Brief statement of module purpose, business value, and boundaries.
+Format: `- [ ] <KEY>-TNNN [P] Description (AC: ids) (Files: paths) (Depends: task ids | none)`
 
-## 2. Personas & User Stories
-- **US-1**: As a `<role>`, I want to `<action>`, so that `<outcome>`.
-- **US-2**: ...
+- Every AC and E2E ID is referenced by at least one task.
+- Tasks are small (roughly one file group and its tests, under ~150 changed lines).
+- `[P]` only when the task touches files no concurrent task touches.
+- Order by dependency; tests are part of the task that implements the behaviour, not a separate late phase.
 
-## 3. Detailed Acceptance Criteria (Given-When-Then)
-- **AC-1.1**: Given `<state>`, When `<event>`, Then `<expected result>`.
-- **AC-1.2**: ...
+## Step 6: Validate (mandatory)
 
-## 4. API & Integration Contracts
-- Endpoint routes, HTTP verbs, request payloads, response schemas, and status codes.
-- Event schemas / message broker topics (if asynchronous).
-- Error responses (RFC 7807 Problem Details).
-
-## 5. Data Models & State Transitions
-- Entities, value objects, primary keys, relationships, validations, and indexes.
-
-## 6. Automated Test Criteria (MANDATORY GATE)
-### 6.1 Unit Test Criteria
-- Explicit list of domain logic, validation rules, and edge cases requiring unit test coverage.
-- Edge cases: null/empty inputs, boundary values, invalid credentials, concurrency conflicts.
-
-### 6.2 Integration Test Criteria
-- Database persistence tests (real or Testcontainers).
-- Middleware & pipeline tests (authentication, authorization, logging, exception filters).
-
-### 6.3 Automated End-to-End (E2E) Test Scenarios
-- Fully automated E2E test suite specifications simulating real user/client interactions.
-- Example:
-  - **Scenario E2E-01**: New User Registration to First Authenticated API Call.
-    - *Step 1*: Client POST `/api/v1/auth/register` with valid payload. Expected: 201 Created + User ID.
-    - *Step 2*: Client POST `/api/v1/auth/login` with created credentials. Expected: 200 OK + JWT access token.
-    - *Step 3*: Client GET `/api/v1/profile` with Bearer token. Expected: 200 OK + user profile data matching registration.
-    - *Step 4*: Client GET `/api/v1/profile` without token. Expected: 401 Unauthorized.
-
-## 7. Non-Functional & Security Requirements
-- Performance thresholds (p95 latency, throughput).
-- Security audits: OWASP Top 10 mitigations, input sanitization, rate limiting.
+```bash
+python scripts/sdd_engine.py validate --module <slug>
 ```
 
----
+Iterate until it reports 0 errors. Then walk `checklist.md` and tick only items you can justify.
+If any `[NEEDS CLARIFICATION]` remains, stop and ask the user; validation will keep failing until it
+is answered.
 
-## Step 3: Generate `specs/<module-slug>/plan.md`
+## Step 7: Gate
 
-Using `.specify/templates/plan-template.md`:
-- Document proposed directory structure, classes/interfaces, project references, third-party packages.
-- Define test project organization (`tests/<module-slug>.UnitTests`, `tests/<module-slug>.IntegrationTests`, `tests/<module-slug>.E2ETests`).
+Set the module's roadmap status to `Specified` and present:
+- Requirements covered, AC and E2E counts, and the slice plan.
+- Contracts provided and consumed, and any breaking-change risk.
+- Open questions answered during this step.
 
----
-
-## Step 4: Generate `specs/<module-slug>/tasks.md`
-
-Using `.specify/templates/tasks-template.md`:
-- Group tasks logically:
-  - **Phase 1: Setup & Contracts** (DTOs, interfaces, database migrations/models).
-  - **Phase 2: Core Domain Logic & Unit Tests** (TDD / unit test verification).
-  - **Phase 3: APIs, Integration & Infrastructure** (Controllers, services, repository implementations).
-  - **Phase 4: Automated E2E Test Suite Implementation** (End-to-end tests verifying scenarios from Section 6.3).
-  - **Phase 5: Verification & Documentation** (Linters, test pass rate, swagger/OpenAPI validation).
-
----
-
-## Step 5: Quality Gate & Review
-
-1. Create `.specify/specs/<module-slug>/checklist.md` confirming:
-   - [ ] Are all acceptance criteria clearly testable?
-   - [ ] Are automated unit, integration, and E2E test scenarios explicitly defined?
-   - [ ] Does the plan align with the System Architecture and Constitution?
-2. Prompt the user:
-   > "Specification suite for `<module-slug>` is ready for review in `.specify/specs/<module-slug>/`. Approve to trigger the autonomous code generation and review loop via `/sdd-loop <module-slug>`."
+> "Specification for `<slug>` is ready in `.specify/specs/<slug>/`. Approve to start `/sdd-loop <slug>`."

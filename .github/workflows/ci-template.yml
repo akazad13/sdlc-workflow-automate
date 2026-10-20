@@ -1,78 +1,125 @@
-# Continuous Integration (CI) Quality Gate Workflow Template
-# Adapt the steps below to match your project stack (Node.js, Python, Go, or .NET).
+# Continuous Integration (CI) quality gate template.
+# Uncomment the block for your stack. Mark the "build-and-test" and "sdd-gates" jobs as required
+# status checks in branch protection so nothing merges on red.
 name: Continuous Integration (CI)
 
 on:
   push:
-    branches: [ "main", "feature/**" ]
-  pull_request:
     branches: [ "main" ]
+  # All target branches, so stacked PRs (feature/b -> feature/a) are gated too.
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # Deterministic checks on the SDD artifacts: no unresolved markers, every acceptance criterion
+  # planned and referenced by a test, acyclic module and task dependencies.
+  sdd-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Validate roadmap and module specs
+      run: |
+        if [ -d .specify/specs ]; then
+          python scripts/sdd_engine.py validate --all --stage spec
+        else
+          echo "No module specs yet."
+        fi
+    - name: Validate implementation traceability for modules changed in this PR
+      if: github.event_name == 'pull_request'
+      run: |
+        base="origin/${{ github.base_ref }}"
+        for slug in $(git diff --name-only "$base"...HEAD | sed -n 's#^\.specify/specs/\([^/]*\)/.*#\1#p' | sort -u); do
+          if [ -f ".specify/specs/$slug/spec.md" ]; then
+            python scripts/sdd_engine.py validate --module "$slug" --stage impl
+          fi
+        done
+
+  # Regression suite for the toolkit itself (scripts/sdd_engine.py, .github/scripts/pr_review_agent.py).
+  # Stdlib unittest only; delete this job if you removed tests/toolkit from your project.
+  toolkit-tests:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.12']
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Run toolkit tests
+      run: python -m unittest discover -s tests/toolkit -v
+
   build-and-test:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    timeout-minutes: 30
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
     # =========================================================================
-    # OPTION A: Node.js / TypeScript Workspace
+    # OPTION A: Node.js / TypeScript
     # =========================================================================
-    # - name: Setup Node.js
-    #   uses: actions/setup-node@v4
+    # - uses: actions/setup-node@v4
     #   with:
-    #     node-version: '20'
+    #     node-version: '22'
     #     cache: 'npm'
-    # - name: Install Dependencies
-    #   run: npm ci
-    # - name: Type Check & Lint (Zero Tolerance for Warnings)
-    #   run: npm run lint
-    # - name: Run Automated Tests
-    #   run: npm test -- --run
+    # - run: npm ci
+    # - name: Type check & lint (zero warnings)
+    #   run: npm run lint -- --max-warnings=0
+    # - name: Tests with coverage
+    #   run: npm test -- --coverage
 
     # =========================================================================
-    # OPTION B: Python Workspace
+    # OPTION B: Python
     # =========================================================================
-    # - name: Setup Python
-    #   uses: actions/setup-python@v5
+    # - uses: actions/setup-python@v5
     #   with:
     #     python-version: '3.12'
-    # - name: Install Dependencies
-    #   run: pip install -r requirements.txt
-    # - name: Lint & Static Analysis
-    #   run: ruff check .
-    # - name: Run Automated Tests
-    #   run: pytest -v
+    #     cache: 'pip'
+    # - run: pip install -r requirements.txt
+    # - run: ruff check .
+    # - run: pytest -q --cov --cov-fail-under=80
 
     # =========================================================================
-    # OPTION C: Go Workspace
+    # OPTION C: Go
     # =========================================================================
-    # - name: Setup Go
-    #   uses: actions/setup-go@v5
+    # - uses: actions/setup-go@v5
     #   with:
     #     go-version: '1.23'
-    # - name: Build (Zero Warnings)
-    #   run: go build ./...
-    # - name: Run Automated Tests
-    #   run: go test -v -race ./...
+    # - run: go vet ./...
+    # - run: go test -race -coverprofile=coverage.out ./...
 
     # =========================================================================
-    # OPTION D: .NET Workspace
+    # OPTION D: .NET
     # =========================================================================
-    # - name: Setup .NET
-    #   uses: actions/setup-dotnet@v4
+    # - uses: actions/setup-dotnet@v4
     #   with:
     #     dotnet-version: '10.0.x'
-    # - name: Restore Dependencies
-    #   run: dotnet restore
-    # - name: Build Solution (--warnaserror)
-    #   run: dotnet build --no-restore --configuration Release --warnaserror
-    # - name: Run Automated Tests
-    #   run: dotnet test --no-build --configuration Release --verbosity normal
+    # - run: dotnet restore
+    # - run: dotnet build --no-restore --configuration Release --warnaserror
+    # - run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
 
-    - name: Verify Health Check (Default Fallback)
-      run: |
-        echo "CI workflow triggered. Uncomment the relevant runtime block above for your language."
+    # =========================================================================
+    # Monorepos: run only affected projects with a paths filter (e.g. dorny/paths-filter)
+    # or your build tool's affected-graph command (nx affected, turbo --filter, bazel query).
+    # =========================================================================
+
+    # Replace this step once a stack block above is enabled. A green check here means nothing was tested.
+    - name: Not configured
+      run: echo "::warning::CI template not configured. Uncomment the block for your stack and delete this step."

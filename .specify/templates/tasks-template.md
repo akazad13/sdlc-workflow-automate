@@ -1,27 +1,25 @@
-# Actionable Implementation Tasks: [MODULE/FEATURE NAME] (`[module-slug]`)
+# Implementation Tasks: [MODULE TITLE] (`[module-slug]`)
 
-## Phase 1: Setup & Domain Contracts
-- [ ] [P1-01] Create domain entities, value objects, and domain events for `[module-slug]`.
-- [ ] [P1-02] Define request/response DTOs and API contract interfaces.
-- [ ] [P1-03] Implement domain exceptions and error code mappings.
+> Format: `- [ ] [KEY]-TNNN [P?] Description (AC: ids) (Files: paths) (Depends: task ids | none)`
+> - `[P]` marks tasks that touch disjoint files and can run in parallel.
+> - Every acceptance criterion and E2E scenario in `spec.md` must be referenced by at least one task.
+> - Keep each task small enough to implement and test in one sitting (roughly under 150 changed lines).
+> - Tick a task only after its tests pass locally. Never tick tasks in bulk.
 
-## Phase 2: Core Domain Logic & Unit Tests (Test-First)
-- [ ] [P2-01] Implement domain validation rules and use case handlers.
-- [ ] [P2-02] Write automated Unit Tests for all entity invariants and business logic edge cases.
-- [ ] [P2-03] Verify 100% unit test pass rate and high branch coverage.
+## Phase 1: Contracts & Domain
+- [ ] [KEY]-T001 Create domain entities and invariants (AC: [KEY]-AC-01) (Files: TODO(sdd)) (Depends: none)
+- [ ] [KEY]-T002 [P] Define request/response DTOs and error mappings (AC: [KEY]-AC-02) (Files: TODO(sdd)) (Depends: none)
 
-## Phase 3: Infrastructure, Persistence & API Handlers
-- [ ] [P3-01] Implement database persistence models, migrations, and repository implementations.
-- [ ] [P3-02] Implement HTTP API route handlers, request validation middleware, and auth policies.
-- [ ] [P3-03] Write Integration Tests verifying repository database operations and HTTP pipeline responses.
+## Phase 2: Core Logic & Unit Tests
+- [ ] [KEY]-T003 Implement validation and use case handlers with unit tests (AC: [KEY]-AC-01, [KEY]-AC-02) (Files: TODO(sdd)) (Depends: [KEY]-T001, [KEY]-T002)
 
-## Phase 4: Automated E2E Test Suite Implementation
-- [ ] [P4-01] Implement automated E2E Test Suite covering Scenario E2E-01 (Happy Path Lifecycle).
-- [ ] [P4-02] Implement automated E2E Test Suite covering Scenario E2E-02 (Fault Injection & RFC 7807).
-- [ ] [P4-03] Execute full test suite and confirm all tests pass cleanly in local test runner.
+## Phase 3: Infrastructure, API & Integration Tests
+- [ ] [KEY]-T004 Implement persistence, migrations, and repository with integration tests (AC: [KEY]-AC-01) (Files: TODO(sdd)) (Depends: [KEY]-T003)
+- [ ] [KEY]-T005 Implement API routes and auth policies with integration tests (AC: [KEY]-AC-02, [KEY]-AC-03) (Files: TODO(sdd)) (Depends: [KEY]-T003)
 
-## Phase 5: Autonomous Review Loop & Documentation
-- [ ] [P5-01] Submit implementation to the Review Agent audit loop (`/sdd-loop [module-slug]`).
-- [ ] [P5-02] Remediate any findings until `STATUS: APPROVED` is logged in `review-log.md`.
-- [ ] [P5-03] Synchronize `README.md` (roadmap, test counts, directory layout).
-- [ ] [P5-04] Raise Pull Request via `/sdd-pr [module-slug]`.
+## Phase 4: Automated E2E Tests
+- [ ] [KEY]-T006 Implement [KEY]-E2E-01 and [KEY]-E2E-02 (AC: [KEY]-E2E-01, [KEY]-E2E-02) (Files: TODO(sdd)) (Depends: [KEY]-T004, [KEY]-T005)
+
+## Phase 5: Verification & Documentation
+- [ ] [KEY]-T007 Run `sdd_engine.py verify --module [module-slug]` and resolve every failure (Depends: [KEY]-T006)
+- [ ] [KEY]-T008 Update README roadmap row and docs links (Depends: [KEY]-T007)

@@ -59,3 +59,6 @@ appsettings.Local.json
 appsettings.*.Local.json
 *.secrets.json
 .env
+
+## SDD engine raw command logs (summaries live in .specify/specs/<slug>/verification.md)
+.specify/.runs/

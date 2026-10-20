@@ -1,6 +1,6 @@
 # 📜 Engineering Constitution & Quality Principles
 
-> **Version:** 1.0.0 | **Governance:** Strict Spec-Driven Development (SDD) Compliance
+> **Version:** 1.1.0 | **Governance:** Strict Spec-Driven Development (SDD) Compliance
 
 This document defines the non-negotiable architectural principles, engineering standards, and quality gates for all modules and services in the project.
 
@@ -20,7 +20,7 @@ This document defines the non-negotiable architectural principles, engineering s
 - Every feature or module specification must define verifiable Unit, Integration, and Automated E2E test criteria before implementation starts.
 - Code without automated tests will be rejected by the Review Agent and CI pipeline.
 - Quality standards:
-  - Domain layer: minimum 85% branch coverage.
+  - Domain layer: minimum 85% branch coverage, measured by the coverage tool in CI (never estimated).
   - Endpoints: integration test verifying success (200/201), validation errors (400), unauthorized access (401/403), and missing resources (404).
 
 ### Principle III: Asynchronous Event-Driven Decoupling
@@ -38,13 +38,41 @@ This document defines the non-negotiable architectural principles, engineering s
 
 ### Principle VI: Idempotency & Concurrency Protection
 - State-altering operations (creation, checkout, payment processing, status updates) must support idempotency mechanisms (e.g. `Idempotency-Key` headers) to prevent duplicate execution.
-- High-concurrency operations must enforce optimistic locking or atomic atomic reservation patterns to eliminate race conditions.
+- High-concurrency operations must enforce optimistic locking or atomic reservation patterns to eliminate race conditions.
+
+### Principle VII: Traceability (NON-NEGOTIABLE)
+- Every PRD requirement has a stable `REQ-NNN` ID and exactly one owner module.
+- Every acceptance criterion (`<KEY>-AC-NN`) and E2E scenario (`<KEY>-E2E-NN`) traces to at least one requirement, is planned by at least one task, and is referenced by name or comment in at least one automated test.
+- IDs are never renumbered or reused.
+
+### Principle VIII: Conventions Before Invention
+- In an existing codebase, new code follows the patterns recorded in `project-context.md`. Introducing a new pattern, framework, or third-party package requires a recorded reason in `plan.md` or a constitution amendment.
+- Ambiguity is resolved by asking, not guessing: unresolved questions are written as `[NEEDS CLARIFICATION]` and block the spec gate.
+
+### Principle IX: Small, Reviewable Changes
+- A pull request stays within `max_pr_changed_lines` (see `.specify/config.json`). Larger modules ship as stacked PRs, each independently buildable and tested.
+- Shared contracts and persisted schemas change in a backward-compatible way (expand, migrate, contract) unless a breaking change is approved.
+
+### Principle X: Honest Verification
+- Pass/fail claims come from tool output (`verification.md`, CI), never from an agent's own assessment.
+- Tests are never deleted, skipped, focused, or weakened to make a suite pass. A necessary skip is justified in the review log.
+- An agent that cannot reach approval within the iteration budget reports `BLOCKED`; it does not self-approve.
 
 ---
 
 ## 2. Review Process & CI/CD Gates
 
-1. **SDD Loop Verification**: All tasks must be validated by the autonomous Generator ⟷ Review Agent refinement loop before a PR is opened.
-2. **Deterministic Build**: Compiler / linter must pass cleanly with zero warnings (`--warnaserror` or strict linter mode).
-3. **Automated Test Suite**: All unit, integration, and E2E tests must execute and pass in CI with 100% pass rate.
-4. **Autonomous AI Review Gate**: Every PR is audited by the Google AI PR Review Agent. Merges to `main` are strictly blocked on `❌ CHANGES REQUESTED` until all critical and major findings are resolved.
+1. **Spec Gate**: `sdd_engine.py validate` reports 0 errors (no unresolved markers, full AC-to-task coverage, acyclic dependencies) and a human approves the spec.
+2. **Independent Review**: The Review Agent runs in a separate context from the Generator, cites `file:line` evidence for every finding, and records an AC coverage matrix in `review-log.md`.
+3. **Measured Verification**: `sdd_engine.py verify` passes on the exact code being shipped (fingerprint check). Lint and build pass with zero warnings.
+4. **AI PR Review**: The AI reviewer check fails on Critical/Major findings or an incomplete review. Its findings are triaged, not blindly applied.
+5. **Human Merge**: Merges to `main` need green required checks and at least one human approval. Agents never merge on their own.
+
+---
+
+## 3. Amendment Log
+
+| Version | Date | Change |
+| :--- | :--- | :--- |
+| 1.0.0 | - | Initial principles I-VI |
+| 1.1.0 | 2026-10-19 | Added principles VII-X (traceability, conventions, change size, honest verification) and human merge gate |

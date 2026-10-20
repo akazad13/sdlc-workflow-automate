@@ -1,35 +1,46 @@
-name: Google AI PR Reviewer
+name: AI PR Reviewer
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
   pull-requests: write
-  issues: write
+
+# A newer push supersedes an in-flight review of the same PR.
+concurrency:
+  group: ai-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   review:
     runs-on: ubuntu-latest
-    # Skip draft pull requests
+    timeout-minutes: 30
     if: github.event.pull_request.draft == false
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
 
-    - name: Run Google AI Code Review
+    - name: Run AI Code Review
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        # Optional tuning via repository variables (Settings > Secrets and variables > Actions > Variables)
+        GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        GEMINI_FALLBACK_MODELS: ${{ vars.GEMINI_FALLBACK_MODELS }}
+        AI_REVIEW_BATCH_CHARS: ${{ vars.AI_REVIEW_BATCH_CHARS }}
+        AI_REVIEW_MAX_BATCHES: ${{ vars.AI_REVIEW_MAX_BATCHES }}
+        AI_REVIEW_IGNORE: ${{ vars.AI_REVIEW_IGNORE }}
+        AI_REVIEW_FAIL_ON_PARTIAL: ${{ vars.AI_REVIEW_FAIL_ON_PARTIAL }}
+        AI_REVIEW_STRICT_EVIDENCE: ${{ vars.AI_REVIEW_STRICT_EVIDENCE }}
+        AI_REVIEW_OPTIONAL: ${{ vars.AI_REVIEW_OPTIONAL }}
       run: python .github/scripts/pr_review_agent.py
