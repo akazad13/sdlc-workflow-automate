@@ -211,10 +211,17 @@ Updated by `/sdd-pr` from `verification.md` and `review-log.md`. Live state: `py
 | *`auth-service`* *(example)* | `AUTH` | *Authentication & sessions* | `feature/auth-service` | Pending | `APPROVED` | PASS (42 passed, 0 failed) |
 
 ### 📚 Governance Documents
+- **AI Agent Guidance**: [`AGENTS.md`](AGENTS.md)
 - **Constitution**: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 - **Pipeline**: [`.specify/workflows/sdd-full/workflow.yml`](.specify/workflows/sdd-full/workflow.yml)
 - **Templates**: [`.specify/templates/`](.specify/templates/)
 - **Configuration**: [`.specify/config.json`](.specify/config.json)
+
+---
+
+## 🤖 AI-Driven Development & Contributing
+
+Autonomous coding agents (Antigravity, Cursor, Claude Code, GitHub Copilot) operating in this repository must consult [AGENTS.md](AGENTS.md) for strict SDD workflow invariants, Python 3 stdlib requirements (`scripts/sdd_engine.py`), and verification measurement gates.
 
 ---
 
