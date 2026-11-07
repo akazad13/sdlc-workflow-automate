@@ -20,11 +20,16 @@ stacked PRs, and an AI PR reviewer that handles diffs of any size.
 
 ```text
 sdlc-workflow-automate/
-├── .agents/skills/
-│   ├── sdd-intake/SKILL.md        # Codebase discovery, requirements register, interview, roadmap
-│   ├── sdd-spec/SKILL.md          # Traceable spec (REQ -> AC -> E2E -> task), plan with delivery slices
-│   ├── sdd-loop/SKILL.md          # Task-by-task implementation, independent review, measured verification
-│   └── sdd-pr/SKILL.md            # Gated, right-sized (optionally stacked) PRs and review triage
+├── plugin.json                    # Open Agent Plugin standard manifest (Antigravity, Agent Marketplace)
+├── .claude-plugin/plugin.json     # Claude Code marketplace & plugin distribution manifest
+├── .gemini/commands/              # Declarative slash commands (/sdd-intake, /sdd-spec, /sdd-loop, /sdd-pr)
+├── .agents/
+│   ├── plugins/marketplace.json   # Agent Marketplace catalog entry
+│   └── skills/
+│       ├── sdd-intake/SKILL.md    # Codebase discovery, requirements register, interview, roadmap
+│       ├── sdd-spec/SKILL.md      # Traceable spec (REQ -> AC -> E2E -> task), plan with delivery slices
+│       ├── sdd-loop/SKILL.md      # Task-by-task implementation, independent review, measured verification
+│       └── sdd-pr/SKILL.md        # Gated, right-sized (optionally stacked) PRs and review triage
 ├── .github/
 │   ├── scripts/pr_review_agent.py # Gemini PR reviewer: batched, line-anchored, evidence-checked
 │   └── workflows/
@@ -36,6 +41,7 @@ sdlc-workflow-automate/
 │   ├── templates/                 # spec, plan, tasks, checklist, review-log, requirements,
 │   │                              # module-decomposition, project-context
 │   └── workflows/sdd-full/workflow.yml  # Spec-Kit pipeline with four human gates
+├── docs/adr/                      # Architecture Decision Records (ADRs)
 └── scripts/sdd_engine.py          # Scaffolding + validation + verification CLI (stdlib only)
 ```
 
@@ -82,6 +88,7 @@ Generated per project:
 | **AI Orchestration** | Antigravity / Claude Code / Copilot agents | Run the `.agents/skills/` slash commands |
 | **AI PR Reviewer** | [Google Gemini](https://aistudio.google.com/) | `.github/scripts/pr_review_agent.py` (model set by `GEMINI_MODEL`, default `gemini-2.5-flash`) |
 | **Spec Framework** | Spec-Kit structure | `.specify/` templates, constitution, workflow |
+| **Plugin Standard** | [Agent Plugins Specification](https://agent-plugins.org/) | `plugin.json`, `.claude-plugin/`, `.gemini/commands/`, `.agents/plugins/` |
 | **Engine** | Python 3.10+ (`sdd_engine.py`) | Scaffold, validate, verify, status, PR gates. No third-party packages |
 | **Version Control & PRs** | Git + [GitHub CLI](https://cli.github.com/) | Branches, pushes, `gh pr create`, review triage |
 | **CI/CD** | GitHub Actions | Artifact gates, build/test, AI review |
@@ -108,7 +115,17 @@ monorepos, set `commands` for the full gate and `module_commands.<slug>.test` fo
 1. **Python 3.10+**, **Git**, and **GitHub CLI** (`gh auth login`).
 2. A [Google AI Studio API key](https://aistudio.google.com/) for the AI PR reviewer.
 
-### 1. Add the toolkit to your project
+### 1. Add the toolkit to your project (or Install as Plugin)
+
+**Option A: Install as a Cross-Agent Plugin ([ADR-0004](docs/adr/0004-cross-agent-plugin-architecture.md))**
+
+| Runtimes | Installation Command |
+| :--- | :--- |
+| **Open Skills CLI** (70+ agents) | `npx skills add akazad13/sdlc-automate-workflow` |
+| **Claude Code** | `/plugin marketplace add akazad13/sdlc-automate-workflow`<br>`/plugin install sdlc-automate-workflow` |
+| **Antigravity / Gemini CLI** | Clone/copy into `~/.gemini/config/plugins/sdlc-automate-workflow` |
+
+**Option B: Direct repository copy**
 
 ```bash
 cp -r /path_to_this_repo/.agents /path_to_this_repo/.github /path_to_this_repo/.specify /path_to_this_repo/scripts .
@@ -236,6 +253,7 @@ Major engineering choices and architectural trade-offs in this toolkit are forma
 | [ADR-0001](docs/adr/0001-record-architecture-decisions.md) | Record Architecture Decisions | `Accepted` | Establish ADRs in `docs/adr/` to retain rationale and prevent context drift across autonomous agent sessions. |
 | [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md) | Zero-Dependency Python 3 Engine | `Accepted` | Restrict core CLI engine (`scripts/sdd_engine.py`) and review scripts to Python 3 stdlib without external packages. |
 | [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md) | Testing Paradigm & Agentic Verification | `Accepted` | Codify zero-dependency Python stdlib unittest testing paradigm, DAMP test design, Prove-It bug reproduction, and independent agentic verification. |
+| [ADR-0004](docs/adr/0004-cross-agent-plugin-architecture.md) | Cross-Agent Plugin Architecture & Packaging | `Accepted` | Package toolkit as a unified, cross-agent plugin bundle supporting Antigravity, Claude Code, and Agent Marketplace. |
 
 For detailed context, alternatives considered, consequences, and lifecycle rules, see the [Architecture Decision Records Index](docs/adr/README.md).
 

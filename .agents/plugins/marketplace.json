@@ -1,0 +1,22 @@
+{
+  "name": "sdlc-automate-workflow",
+  "interface": {
+    "displayName": "Autonomous Spec-Driven SDLC Toolkit"
+  },
+  "plugins": [
+    {
+      "name": "sdlc-automate-workflow",
+      "version": "1.0.0",
+      "description": "Reusable Spec-Driven Development (SDD) AI workflow turning PRDs into traceable specs, verified code, and reviewable pull requests.",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

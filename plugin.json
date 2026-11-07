@@ -1,0 +1,29 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "sdlc-automate-workflow",
+  "version": "1.0.0",
+  "description": "Autonomous Spec-Driven SDLC Toolkit — Reusable Spec-Driven Development (SDD) AI workflow turning PRDs into traceable specs, verified code, and reviewable pull requests.",
+  "author": {
+    "name": "Md. Abul Kalam",
+    "url": "https://github.com/akazad13"
+  },
+  "homepage": "https://github.com/akazad13/sdlc-automate-workflow",
+  "repository": "https://github.com/akazad13/sdlc-automate-workflow",
+  "license": "MIT",
+  "keywords": [
+    "sdd",
+    "spec-driven-development",
+    "sdlc",
+    "testing",
+    "ai-agents",
+    "automation",
+    "traceability",
+    "verification"
+  ],
+  "skills": "./.agents/skills",
+  "suggestedPrompts": [
+    "Run SDD intake on my PRD to generate requirements register and module roadmap",
+    "Author a traceable spec and technical plan with delivery slices for the active module",
+    "Execute the SDD implementation loop with TDD and independent verification"
+  ]
+}

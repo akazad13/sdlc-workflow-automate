@@ -13,6 +13,7 @@ We capture the *why* behind significant architectural choices, structural constr
 | [ADR-0001](0001-record-architecture-decisions.md) | Record Architecture Decisions | `Accepted` | 2026-10-20 | Adopt ADRs in `docs/adr/` to capture architectural decisions and prevent drift in multi-agent workflows. |
 | [ADR-0002](0002-zero-dependency-stdlib-engine.md) | Zero-Dependency Python 3 Standard Library Engine | `Accepted` | 2026-10-20 | Restrict core CLI engine (`scripts/sdd_engine.py`) and review scripts to Python 3 stdlib without external packages. |
 | [ADR-0003](0003-testing-paradigm-and-agentic-verification.md) | Testing Paradigm and Agentic Verification | `Accepted` | 2026-11-07 | Codify zero-dependency Python stdlib unittest testing paradigm, DAMP test design, Prove-It bug reproduction, and independent agentic verification. |
+| [ADR-0004](0004-cross-agent-plugin-architecture.md) | Cross-Agent Plugin Architecture & Packaging Standard | `Accepted` | 2026-11-07 | Package toolkit as a unified, cross-agent plugin bundle supporting Antigravity, Claude Code, and Agent Marketplace. |
 
 ---
 

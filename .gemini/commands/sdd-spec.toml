@@ -1,0 +1,10 @@
+description = "Run SDD spec: generate a traceable module specification, technical plan, and task breakdown"
+
+prompt = """
+Invoke the sdd-spec skill.
+
+1. Generate spec.md with bidirectional REQ -> AC -> E2E traceability.
+2. Produce plan.md with delivery slices and project context alignment.
+3. Scaffold tasks.md with atomic, ordered, test-driven implementation steps.
+4. Validate artifacts with `python scripts/sdd_engine.py validate <module> --stage spec`.
+"""

@@ -1,0 +1,10 @@
+description = "Run SDD PR: verify pre-flight gates, sync roadmap, open right-sized PRs, and triage feedback"
+
+prompt = """
+Invoke the sdd-pr skill.
+
+1. Run pre-flight gates: verification PASS, review APPROVED, fingerprint match, size checks.
+2. Sync module implementation status into README.md roadmap table.
+3. Open right-sized (or stacked) PR using GitHub CLI.
+4. Triage CI and AI PR review agent feedback.
+"""

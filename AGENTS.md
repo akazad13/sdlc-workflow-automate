@@ -11,7 +11,7 @@ This document provides mandatory guidance for autonomous AI coding agents (Antig
 - **Skills**: `.agents/skills/` (`sdd-intake`, `sdd-spec`, `sdd-loop`, `sdd-pr`).
 - **GitHub Automation**: `.github/workflows/` (CI merge gate, Gemini AI PR review agent).
 - **Templates & Constitution**: `.specify/` templates and `.specify/memory/constitution.md`.
-- **Architecture Decision Records (ADRs)**: [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md), [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md), [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md)).
+- **Architecture Decision Records (ADRs)**: [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md), [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md), [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md), [ADR-0004](docs/adr/0004-cross-agent-plugin-architecture.md)).
 
 ---
 
@@ -28,6 +28,8 @@ This document provides mandatory guidance for autonomous AI coding agents (Antig
    - Reusable workflows and templates must pass `scripts/sdd_engine.py validate --all` before release.
 5. **Architecture Decisions Recorded as ADRs ([ADR-0001](docs/adr/0001-record-architecture-decisions.md))**:
    - Any architectural change, framework choice, or structural invariant modification must be accompanied by an ADR in `docs/adr/` and indexed in `docs/adr/README.md`. Decisions are immutable; changes require superseding ADRs.
+6. **Cross-Agent Plugin Standard Integrity ([ADR-0004](docs/adr/0004-cross-agent-plugin-architecture.md))**:
+   - The plugin manifests (`plugin.json`, `.claude-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.gemini/commands/`) must strictly match the active skills in `.agents/skills/` and adhere to the Agent Plugin schema. Customizations must install and execute cleanly in Antigravity, Claude Code, and open skills harnesses.
 
 ---
 
@@ -53,6 +55,12 @@ python scripts/sdd_engine.py validate --all
 
 # Run intake workflow
 python scripts/sdd_engine.py intake --prd docs/PRD.md
+
+# Agent slash commands (when installed as a plugin)
+/sdd-intake   # PRD intake, requirements register, interview, module DAG
+/sdd-spec     # Traceable module spec, plan with delivery slices, tasks
+/sdd-loop     # TDD execution loop, multi-axis review, measured verify
+/sdd-pr       # Verification gates, roadmap sync, right-sized/stacked PR
 ```
 
 ---
@@ -64,3 +72,4 @@ Before submitting code changes or finishing a turn:
 2. Confirm that `scripts/sdd_engine.py` and tests retain 100% standard library compliance without adding third-party imports ([ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md), [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md)).
 3. Confirm bug fixes include a Prove-It reproduction test per [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md).
 4. Validate that any architectural or invariant alterations are documented in [`docs/adr/`](docs/adr/README.md) per [ADR-0001](docs/adr/0001-record-architecture-decisions.md).
+5. Ensure plugin manifests (`plugin.json`, `.claude-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.gemini/commands/`) remain valid and in sync ([ADR-0004](docs/adr/0004-cross-agent-plugin-architecture.md)).

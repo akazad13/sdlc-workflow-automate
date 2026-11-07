@@ -1,0 +1,10 @@
+description = "Run SDD intake: turn a PRD into a traceable requirements register, interview, and module roadmap"
+
+prompt = """
+Invoke the sdd-intake skill.
+
+1. Discover existing layout, conventions, and verified build/test commands.
+2. Parse the PRD into atomic REQ-NNN requirements with module ownership.
+3. Conduct the architecture interview to resolve open technical decisions.
+4. Generate the module decomposition DAG and execution roadmap.
+"""
