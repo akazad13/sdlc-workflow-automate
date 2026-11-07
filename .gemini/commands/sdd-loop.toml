@@ -2,6 +2,7 @@ description = "Run SDD implementation loop: task-by-task TDD with independent re
 
 prompt = """
 Invoke the sdd-loop skill.
+User arguments: {{args}}
 
 1. Establish baseline test state in verification-baseline.md.
 2. Implement each task incrementally using red-green-refactor (TDD).

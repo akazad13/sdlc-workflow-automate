@@ -2,6 +2,7 @@ description = "Run SDD spec: generate a traceable module specification, technica
 
 prompt = """
 Invoke the sdd-spec skill.
+User arguments: {{args}}
 
 1. Generate spec.md with bidirectional REQ -> AC -> E2E traceability.
 2. Produce plan.md with delivery slices and project context alignment.

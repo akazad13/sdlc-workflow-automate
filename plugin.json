@@ -21,6 +21,7 @@
     "verification"
   ],
   "skills": "./.agents/skills",
+  "commands": "./.gemini/commands",
   "suggestedPrompts": [
     "Run SDD intake on my PRD to generate requirements register and module roadmap",
     "Author a traceable spec and technical plan with delivery slices for the active module",

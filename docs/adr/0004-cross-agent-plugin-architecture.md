@@ -28,21 +28,23 @@ The repository root contains a standard-compliant `plugin.json` adhering to the 
 
 ### 2. Multi-Platform Agent Manifests
 To support heterogeneous agent runtimes without lock-in, the toolkit exports platform-specific configuration overlays:
-- **Claude Code**: `.claude-plugin/plugin.json` exposing `./.agents/skills` and `./.gemini/commands` for direct Claude Code marketplace installation.
-- **Antigravity / Gemini CLI**: `.gemini/commands/` providing declarative TOML slash commands mapping each lifecycle phase to its respective skill.
+- **Claude Code**: `.claude-plugin/plugin.json` exposing `./.agents/skills` and dedicated Markdown commands in `./.claude/commands/` with YAML frontmatter and `$ARGUMENTS` interpolation.
+- **Antigravity / Gemini CLI**: `.gemini/commands/` providing declarative TOML slash commands mapping each lifecycle phase to its respective skill with `{{args}}` argument forwarding.
 - **Agent Marketplace**: `.agents/plugins/marketplace.json` enabling discovery and one-click installation via `<plugin-card catalog-id="sdlc-automate-workflow"></plugin-card>`.
 - **Open Skills CLI**: Compatible directory layout supporting `npx skills add akazad13/sdlc-automate-workflow`.
 
-### 3. Declarative Slash Commands (`.gemini/commands/*.toml`)
+### 3. Declarative Slash Commands (`.gemini/commands/` and `.claude/commands/`)
 Four core slash commands map directly to the four stages of Spec-Driven Development:
 - `/sdd-intake`: Codebase discovery, PRD parsing into atomic `REQ-NNN` requirements, architecture interview, and module dependency graph generation.
 - `/sdd-spec`: Traceable module specification (`spec.md`), technical plan (`plan.md`), and delivery tasks (`tasks.md`).
 - `/sdd-loop`: Incremental Red-Green-Refactor implementation, independent evidence-based review (`review-log.md`), and objective test verification (`verification.md`).
 - `/sdd-pr`: Pre-flight verification gates, README roadmap status synchronization, and right-sized or stacked pull request creation.
 
-### 4. Preservation of Inviolable Engine Invariants
+### 4. Preservation of Inviolable Engine Invariants & Plugin Fallbacks
 Packaging the toolkit as an agent plugin does not compromise the underlying execution engine:
 - The core CLI (`scripts/sdd_engine.py`) and review automation remain strictly Python 3 standard library (zero external dependencies).
+- When invoked in a consumer repository where `.specify/templates/` is not yet local, `Workspace.render_template` seamlessly falls back to bundled engine templates without crashing.
+- Target root defaults to `Path.cwd()` when executed globally or via plugin runners.
 - Verification is always measured by real test runners and process exit codes, never by agent self-attestation.
 - Tests remain executable via standard Python `unittest`.
 

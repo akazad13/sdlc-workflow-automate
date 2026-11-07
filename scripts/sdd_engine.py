@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+FALLBACK_TEMPLATES = DEFAULT_ROOT / ".specify" / "templates"
 
 DEFAULT_CONFIG = {
     "base_branch": "main",
@@ -136,6 +137,10 @@ class Workspace:
 
     def render_template(self, name: str, slug: str = "", title: str = "", key: str = "") -> str:
         path = self.templates / name
+        if not path.exists() and FALLBACK_TEMPLATES.exists():
+            fallback = FALLBACK_TEMPLATES / name
+            if fallback.exists():
+                path = fallback
         if not path.exists():
             raise SystemExit(f"error: template not found: {self.rel(path)}")
         text = path.read_text(encoding="utf-8")
@@ -1275,7 +1280,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     if not args.command:
         parser.print_help()
         return 0
-    ws = Workspace((args.root or DEFAULT_ROOT).resolve())
+    target_root = args.root.resolve() if args.root else Path.cwd()
+    ws = Workspace(target_root)
     handlers = {"intake": cmd_intake, "spec": cmd_spec, "validate": cmd_validate, "verify": cmd_verify,
                 "status": cmd_status, "loop": cmd_loop, "pr": cmd_pr, "run-all": cmd_run_all}
     return handlers[args.command](ws, args)

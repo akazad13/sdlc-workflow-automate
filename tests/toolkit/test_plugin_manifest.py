@@ -1,7 +1,7 @@
 """Tests validating cross-agent plugin manifests and configuration.
 
 Ensures plugin.json, .claude-plugin, .agents/plugins/marketplace.json,
-and .gemini/commands satisfy the Cross-Agent Plugin Architecture (ADR-0004).
+.gemini/commands, and .claude/commands satisfy the Cross-Agent Plugin Architecture (ADR-0004).
 Zero external dependencies; uses only Python standard library.
 """
 
@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import tempfile
 import unittest
+
+from scripts.sdd_engine import Workspace
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -30,12 +33,13 @@ class TestPluginManifest(unittest.TestCase):
         self.assertTrue(data.get("description"), "Description must be defined")
         self.assertTrue(data.get("license"), "License must be defined")
         self.assertEqual(data.get("skills"), "./.agents/skills")
+        self.assertEqual(data.get("commands"), "./.gemini/commands")
         self.assertIn("suggestedPrompts", data)
         self.assertIsInstance(data["suggestedPrompts"], list)
         self.assertGreaterEqual(len(data["suggestedPrompts"]), 1)
 
     def test_claude_plugin_manifest(self) -> None:
-        """Claude plugin manifest must exist and reference skills."""
+        """Claude plugin manifest must exist, reference skills and valid markdown commands."""
         manifest_path = REPO_ROOT / ".claude-plugin" / "plugin.json"
         self.assertTrue(manifest_path.is_file(), ".claude-plugin/plugin.json must exist")
 
@@ -46,6 +50,22 @@ class TestPluginManifest(unittest.TestCase):
         self.assertEqual(data.get("skills"), "./.agents/skills")
         skills_path = (REPO_ROOT / data["skills"]).resolve()
         self.assertTrue(skills_path.is_dir(), f"Skills path {skills_path} must exist")
+
+        commands_dirs = data.get("commands", [])
+        self.assertIsInstance(commands_dirs, list)
+        self.assertGreaterEqual(len(commands_dirs), 1)
+
+        for cmd_dir_rel in commands_dirs:
+            cmd_dir = (REPO_ROOT / cmd_dir_rel).resolve()
+            self.assertTrue(cmd_dir.is_dir(), f"Claude command directory {cmd_dir} must exist")
+            md_files = list(cmd_dir.glob("*.md"))
+            self.assertGreaterEqual(len(md_files), 4, "Must contain at least 4 markdown commands")
+            for md in md_files:
+                content = md.read_text(encoding="utf-8")
+                self.assertTrue(content.startswith("---"), f"{md.name} must start with YAML frontmatter")
+                self.assertIn("description:", content)
+                self.assertIn("disable-model-invocation:", content)
+                self.assertIn("$ARGUMENTS", content)
 
     def test_marketplace_manifest(self) -> None:
         """Marketplace manifest must exist and define the plugin entry."""
@@ -61,7 +81,7 @@ class TestPluginManifest(unittest.TestCase):
         self.assertTrue(any(p.get("name") == "sdlc-automate-workflow" for p in plugins))
 
     def test_gemini_slash_commands(self) -> None:
-        """All four SDD lifecycle stages must have corresponding .toml command files."""
+        """All four SDD lifecycle stages must have corresponding .toml command files with argument interpolation."""
         commands_dir = REPO_ROOT / ".gemini" / "commands"
         self.assertTrue(commands_dir.is_dir(), ".gemini/commands must exist")
 
@@ -72,6 +92,7 @@ class TestPluginManifest(unittest.TestCase):
             content = target.read_text(encoding="utf-8")
             self.assertIn("description =", content, f"{cmd_file} must define a description")
             self.assertIn("prompt =", content, f"{cmd_file} must define a prompt")
+            self.assertIn("{{args}}", content, f"{cmd_file} must reference {{{{args}}}}")
 
     def test_referenced_skills_have_valid_frontmatter(self) -> None:
         """All declared skills must have SKILL.md with name and description."""
@@ -86,6 +107,22 @@ class TestPluginManifest(unittest.TestCase):
             self.assertTrue(text.startswith("---"), f"{skill}/SKILL.md must start with YAML frontmatter")
             self.assertIn("name:", text)
             self.assertIn("description:", text)
+
+    def test_engine_template_fallback_in_bare_consumer_repo(self) -> None:
+        """When consumer repo has no local .specify/templates, engine must fall back to bundled templates."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bare_repo = Path(tmp_dir)
+            ws = Workspace(bare_repo)
+            self.assertFalse(ws.templates.exists(), "Bare workspace should not have templates")
+
+            # render_template must successfully load from fallback without crashing
+            rendered = ws.render_template(
+                "requirements-template.md",
+                slug="test-module",
+                title="Test Module",
+                key="TEST",
+            )
+            self.assertIn("REQ-", rendered)
 
 
 if __name__ == "__main__":

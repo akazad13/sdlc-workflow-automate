@@ -2,6 +2,7 @@ description = "Run SDD PR: verify pre-flight gates, sync roadmap, open right-siz
 
 prompt = """
 Invoke the sdd-pr skill.
+User arguments: {{args}}
 
 1. Run pre-flight gates: verification PASS, review APPROVED, fingerprint match, size checks.
 2. Sync module implementation status into README.md roadmap table.

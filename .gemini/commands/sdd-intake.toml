@@ -2,6 +2,7 @@ description = "Run SDD intake: turn a PRD into a traceable requirements register
 
 prompt = """
 Invoke the sdd-intake skill.
+User arguments: {{args}}
 
 1. Discover existing layout, conventions, and verified build/test commands.
 2. Parse the PRD into atomic REQ-NNN requirements with module ownership.

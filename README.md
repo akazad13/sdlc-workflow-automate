@@ -22,7 +22,8 @@ stacked PRs, and an AI PR reviewer that handles diffs of any size.
 sdlc-workflow-automate/
 ├── plugin.json                    # Open Agent Plugin standard manifest (Antigravity, Agent Marketplace)
 ├── .claude-plugin/plugin.json     # Claude Code marketplace & plugin distribution manifest
-├── .gemini/commands/              # Declarative slash commands (/sdd-intake, /sdd-spec, /sdd-loop, /sdd-pr)
+├── .claude/commands/              # Claude Code Markdown slash commands
+├── .gemini/commands/              # Antigravity/Gemini declarative slash commands
 ├── .agents/
 │   ├── plugins/marketplace.json   # Agent Marketplace catalog entry
 │   └── skills/
