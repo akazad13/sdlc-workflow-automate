@@ -202,6 +202,31 @@ Rules come from the **base branch** constitution, so a PR cannot weaken the rule
 
 ---
 
+## 🧪 Testing Paradigm & Agentic Verification
+
+The toolkit is governed by a strict zero-dependency testing architecture codified in [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md) and guided by the `test-driven-development` skill:
+
+- **100% Python Standard Library**: All 95+ regression tests in `tests/toolkit/` run exclusively with Python's built-in `unittest` runner. No `pip install`, virtual environment setup, or external dependencies (`pytest`, `mock`, `tox`) are needed.
+- **Sub-Second Execution**: Unit tests execute in milliseconds, completing the entire 95+ test suite in seconds without external network dependencies.
+- **The "Prove-It" Bug Reproduction Pattern**: Defect fixes require a failing reproduction unit test (RED) before production code is modified (GREEN).
+- **DAMP over DRY**: Tests prioritize Descriptive And Meaningful Phrases over shared fixture complexity, ensuring test failures are transparent and immediately actionable.
+- **Objective Measurement**: Agents cannot self-certify completion. The engine (`scripts/sdd_engine.py verify`) independently executes tests, records exit codes and counts, checks for unauthorized test skips, and computes code fingerprints.
+
+### Run Tests
+
+```bash
+# Run all 95+ toolkit regression tests
+python -m unittest discover -s tests/toolkit -p "test_*.py"
+
+# Run tests with verbose output
+python -m unittest discover -s tests/toolkit -v
+
+# Run an individual test module
+python -m unittest tests/toolkit/test_sdd_engine_validate.py
+```
+
+---
+
 ## 🏛️ Architecture & Decisions
 
 Major engineering choices and architectural trade-offs in this toolkit are formally recorded as **Architecture Decision Records (ADRs)** in [`docs/adr/`](docs/adr/README.md) following the `documentation-and-adrs` standard:
@@ -210,6 +235,7 @@ Major engineering choices and architectural trade-offs in this toolkit are forma
 | :--- | :--- | :--- | :--- |
 | [ADR-0001](docs/adr/0001-record-architecture-decisions.md) | Record Architecture Decisions | `Accepted` | Establish ADRs in `docs/adr/` to retain rationale and prevent context drift across autonomous agent sessions. |
 | [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md) | Zero-Dependency Python 3 Engine | `Accepted` | Restrict core CLI engine (`scripts/sdd_engine.py`) and review scripts to Python 3 stdlib without external packages. |
+| [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md) | Testing Paradigm & Agentic Verification | `Accepted` | Codify zero-dependency Python stdlib unittest testing paradigm, DAMP test design, Prove-It bug reproduction, and independent agentic verification. |
 
 For detailed context, alternatives considered, consequences, and lifecycle rules, see the [Architecture Decision Records Index](docs/adr/README.md).
 

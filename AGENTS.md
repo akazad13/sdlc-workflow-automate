@@ -11,7 +11,7 @@ This document provides mandatory guidance for autonomous AI coding agents (Antig
 - **Skills**: `.agents/skills/` (`sdd-intake`, `sdd-spec`, `sdd-loop`, `sdd-pr`).
 - **GitHub Automation**: `.github/workflows/` (CI merge gate, Gemini AI PR review agent).
 - **Templates & Constitution**: `.specify/` templates and `.specify/memory/constitution.md`.
-- **Architecture Decision Records (ADRs)**: [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md), [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md)).
+- **Architecture Decision Records (ADRs)**: [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md), [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md), [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md)).
 
 ---
 
@@ -21,8 +21,9 @@ This document provides mandatory guidance for autonomous AI coding agents (Antig
    - `scripts/sdd_engine.py` and auxiliary tooling must remain strictly Python standard library (no `pip install` required). It must execute cleanly on any fresh machine or runner with standard Python 3.10+.
 2. **Deterministic Traceability**:
    - Traceability must be strictly bidirectional: `REQ-NNN` (Requirement) -> `AC-NNN` (Acceptance Criterion) -> `E2E-NNN` (Test) -> `TASK-NNN` (Implementation Task).
-3. **Independent Verification**:
-   - The engine must measure verification independently; it never relies on self-reported agent assertions.
+3. **Independent Verification & Pure Stdlib Testing ([ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md))**:
+   - The engine measures verification independently from actual process exit codes and test runner outputs; it never relies on self-reported agent assertions.
+   - Toolkit self-tests must strictly use Python standard library `unittest` (zero `pip install`).
 4. **Git Branch & Gate Integrity**:
    - Reusable workflows and templates must pass `scripts/sdd_engine.py validate --all` before release.
 5. **Architecture Decisions Recorded as ADRs ([ADR-0001](docs/adr/0001-record-architecture-decisions.md))**:
@@ -30,10 +31,21 @@ This document provides mandatory guidance for autonomous AI coding agents (Antig
 
 ---
 
-## 3. Commands Cheat Sheet
+## 3. Testing Paradigm & Agentic Verification ([ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md))
+
+Autonomous AI agents must adhere to the following testing standards:
+- **Pure Standard Library Runner**: All tests in `tests/toolkit/` must execute via Python's built-in `unittest` runner with zero third-party dependencies (`pytest`, `mock`, etc.).
+- **DAMP over DRY**: Prioritize Descriptive And Meaningful Phrases over DRY abstractions. Tests must be self-contained and immediately readable upon failure.
+- **The Prove-It Pattern**: For every bug fix or behavior change, first write a failing unit test reproducing the issue (RED) before implementing the fix (GREEN).
+- **Objective Measurement**: Never accept self-attested agent claims ("all tests pass"). Verification is only valid when measured by `scripts/sdd_engine.py verify` with explicit process exit codes, parsed test counts, and code fingerprints.
+- **Bidirectional Traceability**: Every requirement and acceptance criterion must map directly to an automated test case.
+
+---
+
+## 4. Commands Cheat Sheet
 
 ```bash
-# Run stdlib engine self-tests
+# Run stdlib engine self-tests (95+ unit tests, zero dependencies)
 python -m unittest discover -s tests/toolkit -p "test_*.py"
 
 # Validate SDD configuration and templates
@@ -45,9 +57,10 @@ python scripts/sdd_engine.py intake --prd docs/PRD.md
 
 ---
 
-## 4. Verification Gates for AI Agents
+## 5. Verification Gates for AI Agents
 
 Before submitting code changes or finishing a turn:
 1. Run `python -m unittest discover -s tests/toolkit -p "test_*.py"` — all regression tests must pass.
-2. Confirm that `scripts/sdd_engine.py` retains 100% standard library compliance without adding third-party imports ([ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md)).
-3. Validate that any architectural or invariant alterations are documented in [`docs/adr/`](docs/adr/README.md) per [ADR-0001](docs/adr/0001-record-architecture-decisions.md).
+2. Confirm that `scripts/sdd_engine.py` and tests retain 100% standard library compliance without adding third-party imports ([ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md), [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md)).
+3. Confirm bug fixes include a Prove-It reproduction test per [ADR-0003](docs/adr/0003-testing-paradigm-and-agentic-verification.md).
+4. Validate that any architectural or invariant alterations are documented in [`docs/adr/`](docs/adr/README.md) per [ADR-0001](docs/adr/0001-record-architecture-decisions.md).
