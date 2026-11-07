@@ -37,6 +37,8 @@ The input is a PRD path (e.g. `docs/prd.md`) or pasted PRD text.
 python scripts/sdd_engine.py intake --prd <prd-path> --non-interactive
 ```
 
+*(When executing from an installed plugin on a new project, copy `scripts/sdd_engine.py` into the target project root or run via the plugin's path. The engine automatically leverages bundled fallback templates if local `.specify/templates/` is not yet present.)*
+
 This creates the artifacts above from `.specify/templates/` with `TODO(sdd)` markers and pre-extracts
 candidate requirements. It never overwrites existing files unless `--force` is passed. You conduct
 the real interview in Step 3; the CLI defaults are only placeholders.

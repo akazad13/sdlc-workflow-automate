@@ -1,6 +1,6 @@
 # 📜 Engineering Constitution & Quality Principles
 
-> **Version:** 1.1.0 | **Governance:** Strict Spec-Driven Development (SDD) Compliance
+> **Version:** 1.2.0 | **Governance:** Strict Spec-Driven Development (SDD) Compliance
 
 This document defines the non-negotiable architectural principles, engineering standards, and quality gates for all modules and services in the project.
 
@@ -76,3 +76,4 @@ This document defines the non-negotiable architectural principles, engineering s
 | :--- | :--- | :--- |
 | 1.0.0 | - | Initial principles I-VI |
 | 1.1.0 | 2026-10-19 | Added principles VII-X (traceability, conventions, change size, honest verification) and human merge gate |
+| 1.2.0 | 2026-11-07 | Codified Cross-Agent Plugin Architecture & Packaging Standard (ADR-0004) and slash command integration |

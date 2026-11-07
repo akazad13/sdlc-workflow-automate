@@ -126,6 +126,9 @@ monorepos, set `commands` for the full gate and `module_commands.<slug>.test` fo
 | **Claude Code** | `/plugin marketplace add akazad13/sdlc-automate-workflow`<br>`/plugin install sdlc-automate-workflow` |
 | **Antigravity / Gemini CLI** | Clone/copy into `~/.gemini/config/plugins/sdlc-automate-workflow` |
 
+> [!TIP]
+> **Plugin Bootstrap**: When executing `/sdd-intake` from an installed plugin on a fresh repository, the agent automatically initializes the `.specify/` configuration and copies `scripts/sdd_engine.py` into the target project root so that local test verification and GitHub Actions CI merge gates execute out of the box with zero setup.
+
 **Option B: Direct repository copy**
 
 ```bash
