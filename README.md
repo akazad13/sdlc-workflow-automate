@@ -202,6 +202,19 @@ Rules come from the **base branch** constitution, so a PR cannot weaken the rule
 
 ---
 
+## 🏛️ Architecture & Decisions
+
+Major engineering choices and architectural trade-offs in this toolkit are formally recorded as **Architecture Decision Records (ADRs)** in [`docs/adr/`](docs/adr/README.md) following the `documentation-and-adrs` standard:
+
+| ADR | Title | Status | Summary |
+| :--- | :--- | :--- | :--- |
+| [ADR-0001](docs/adr/0001-record-architecture-decisions.md) | Record Architecture Decisions | `Accepted` | Establish ADRs in `docs/adr/` to retain rationale and prevent context drift across autonomous agent sessions. |
+| [ADR-0002](docs/adr/0002-zero-dependency-stdlib-engine.md) | Zero-Dependency Python 3 Engine | `Accepted` | Restrict core CLI engine (`scripts/sdd_engine.py`) and review scripts to Python 3 stdlib without external packages. |
+
+For detailed context, alternatives considered, consequences, and lifecycle rules, see the [Architecture Decision Records Index](docs/adr/README.md).
+
+---
+
 ## 🗺️ Module Roadmap & Implementation Status
 
 Updated by `/sdd-pr` from `verification.md` and `review-log.md`. Live state: `python scripts/sdd_engine.py status`.
@@ -212,6 +225,7 @@ Updated by `/sdd-pr` from `verification.md` and `review-log.md`. Live state: `py
 
 ### 📚 Governance Documents
 - **AI Agent Guidance**: [`AGENTS.md`](AGENTS.md)
+- **Architecture Decisions (ADRs)**: [`docs/adr/`](docs/adr/README.md)
 - **Constitution**: [`.specify/memory/constitution.md`](.specify/memory/constitution.md)
 - **Pipeline**: [`.specify/workflows/sdd-full/workflow.yml`](.specify/workflows/sdd-full/workflow.yml)
 - **Templates**: [`.specify/templates/`](.specify/templates/)
